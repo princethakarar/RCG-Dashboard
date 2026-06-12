@@ -38,6 +38,7 @@ export interface PortfolioMetrics {
   roiDistribution: BucketData[];
   mayCounts: number;
   junCounts: number;
+  monthlyBreakdown?: { month: string; count: number }[];
 }
 
 export interface LoadedFile {

@@ -8,6 +8,8 @@ import { formatDate, formatDateFull } from '../../lib/formatters';
 import { Badge } from '../ui/badge';
 import { Menu, X } from 'lucide-react';
 
+import Image from 'next/image';
+
 export const TopNav: React.FC = () => {
   const pathname = usePathname();
   const { metrics: metrics3x, netAssetMetrics, data: data3x, netAssetData } = usePortfolio();
@@ -45,7 +47,7 @@ export const TopNav: React.FC = () => {
         
         {/* Left Section: Logo & Brand */}
         <Link href="/" className="flex items-center hover:opacity-90 transition-opacity">
-          <img src="/logo.png" alt="Rising Capital Group" className="h-14 w-auto object-contain" />
+          <Image src="/logo.png" alt="Rising Capital Group" width={180} height={56} className="h-14 w-auto object-contain" />
         </Link>
 
         {/* Center Section: Navigation Links (Desktop) */}

@@ -4,8 +4,9 @@ import * as path from 'path';
 import * as XLSX from 'xlsx';
 import { PortfolioRow, LoadedFile } from '../../lib/types';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function parseExcelDate(cellValue: any): string | null {
+type ExcelCellValue = string | number | Date | null | undefined;
+
+function parseExcelDate(cellValue: unknown): string | null {
   if (!cellValue) return null;
   
   // openpyxl / SheetJS with cellDates:true returns a JS Date object
@@ -40,6 +41,19 @@ function parseExcelDate(cellValue: any): string | null {
   return null;
 }
 
+function parseFloatValue(val: unknown): number {
+  if (val === null || val === undefined) return 0;
+  if (typeof val === 'number') return val;
+  const parsed = parseFloat(String(val));
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+function parseFloatValueOrNull(val: unknown): number | null {
+  if (val === null || val === undefined) return null;
+  if (typeof val === 'number') return val;
+  const parsed = parseFloat(String(val));
+  return isNaN(parsed) ? null : parsed;
+}
 
 export async function GET() {
   try {
@@ -75,7 +89,7 @@ export async function GET() {
 
       if (sheetName) {
         const ws = wb.Sheets[sheetName];
-        const raw = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+        const raw = XLSX.utils.sheet_to_json(ws, { header: 1 }) as ExcelCellValue[][];
         const fileRows: { dateKey: string; data: PortfolioRow }[] = [];
         
         for (let i = 1; i < raw.length; i++) {
@@ -86,41 +100,39 @@ export async function GET() {
           const dateKey = parseExcelDate(dateVal);
           if (!dateKey) continue;
 
-          const netMTM = parseFloat(row[1]);
-          const roiOnDeposit = parseFloat(row[2]);
-          const runningROI = parseFloat(row[3]);
+          const netMTM = parseFloatValue(row[1]);
+          const roiOnDeposit = parseFloatValue(row[2]);
+          const runningROI = parseFloatValue(row[3]);
           
-          let niftyDaily: number | null = parseFloat(row[4]);
-          let niftyCont: number | null = parseFloat(row[5]);
-          let swing: number | null = parseFloat(row[6]);
+          let niftyDaily = parseFloatValueOrNull(row[4]);
+          let niftyCont = parseFloatValueOrNull(row[5]);
+          let swing = parseFloatValueOrNull(row[6]);
 
-          if (isNaN(netMTM)) continue;
-
-          const isNiftyError = isNaN(niftyDaily) || niftyDaily === -100 || niftyDaily === -1 || Math.abs(niftyDaily) > 50;
-          const isNiftyContError = isNaN(niftyCont) || niftyCont === -100 || niftyCont === -1 || Math.abs(niftyCont) > 50;
-          const isSwingError = isNaN(swing) || swing === -100 || swing === -1 || Math.abs(swing) > 50;
+          const isNiftyError = niftyDaily === null || niftyDaily === -100 || niftyDaily === -1 || Math.abs(niftyDaily) > 50;
+          const isNiftyContError = niftyCont === null || niftyCont === -100 || niftyCont === -1 || Math.abs(niftyCont) > 50;
+          const isSwingError = swing === null || swing === -100 || swing === -1 || Math.abs(swing) > 50;
 
           niftyDaily = isNiftyError ? null : niftyDaily;
           niftyCont = isNiftyContError ? null : niftyCont;
           swing = isSwingError ? null : swing;
 
-          const high = parseFloat(row[7]);
-          const low = parseFloat(row[8]);
-          const close = parseFloat(row[9]);
+          const high = parseFloatValueOrNull(row[7]);
+          const low = parseFloatValueOrNull(row[8]);
+          const close = parseFloatValueOrNull(row[9]);
 
           fileRows.push({
             dateKey,
             data: {
               date: dateKey,
               netMTM,
-              roiOnDeposit: isNaN(roiOnDeposit) ? 0 : roiOnDeposit,
-              runningROI: isNaN(runningROI) ? 0 : runningROI,
+              roiOnDeposit,
+              runningROI,
               niftyDailyChange: niftyDaily,
               niftyContinue: niftyCont,
               dailySwing: swing,
-              high: isNaN(high) ? null : high,
-              low: isNaN(low) ? null : low,
-              close: isNaN(close) ? null : close,
+              high,
+              low,
+              close,
             }
           });
         }
@@ -145,7 +157,7 @@ export async function GET() {
 
       if (netAssetSheetName) {
         const wsNet = wb.Sheets[netAssetSheetName];
-        const rawNet = XLSX.utils.sheet_to_json(wsNet, { header: 1 }) as any[][];
+        const rawNet = XLSX.utils.sheet_to_json(wsNet, { header: 1 }) as ExcelCellValue[][];
         const fileNetAssetRows: { dateKey: string; data: PortfolioRow }[] = [];
 
         for (let i = 1; i < rawNet.length; i++) {
@@ -156,17 +168,15 @@ export async function GET() {
           const dateKey = parseExcelDate(dateVal);
           if (!dateKey) continue;
 
-          const netMTM = parseFloat(row[1]);
-          const runningROI = parseFloat(row[2]);
-          const dayROI = parseFloat(row[3]);
-          const niftyDaily = parseFloat(row[4]);
-          const niftyCont = parseFloat(row[5]);
-          const swing = parseFloat(row[6]);
-          const high = parseFloat(row[7]);
-          const low = parseFloat(row[8]);
-          const close = parseFloat(row[9]);
-
-          if (isNaN(netMTM)) continue;
+          const netMTM = parseFloatValue(row[1]);
+          const runningROI = parseFloatValue(row[2]);
+          const dayROI = parseFloatValue(row[3]);
+          const niftyDaily = parseFloatValueOrNull(row[4]);
+          const niftyCont = parseFloatValueOrNull(row[5]);
+          const swing = parseFloatValueOrNull(row[6]);
+          const high = parseFloatValueOrNull(row[7]);
+          const low = parseFloatValueOrNull(row[8]);
+          const close = parseFloatValueOrNull(row[9]);
 
           // Validation condition: exclude any row where NIFTY NET CONTINUE equals -100 OR RUNNING ROI equals 0 OR DATE is blank/null
           if (niftyCont === -100 || runningROI === 0) continue;
@@ -176,14 +186,14 @@ export async function GET() {
             data: {
               date: dateKey,
               netMTM,
-              roiOnDeposit: isNaN(dayROI) ? 0 : dayROI,
-              runningROI: isNaN(runningROI) ? 0 : runningROI,
-              niftyDailyChange: isNaN(niftyDaily) ? null : niftyDaily,
-              niftyContinue: isNaN(niftyCont) ? null : niftyCont,
-              dailySwing: isNaN(swing) ? null : swing,
-              high: isNaN(high) ? null : high,
-              low: isNaN(low) ? null : low,
-              close: isNaN(close) ? null : close,
+              roiOnDeposit: dayROI,
+              runningROI,
+              niftyDailyChange: niftyDaily,
+              niftyContinue: niftyCont,
+              dailySwing: swing,
+              high,
+              low,
+              close,
             }
           });
         }

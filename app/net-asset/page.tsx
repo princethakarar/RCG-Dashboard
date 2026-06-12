@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 import { usePortfolio } from '../hooks/usePortfolioData';
 import { TopNav } from '../components/layout/TopNav';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -71,7 +72,7 @@ export default function NetAssetPortfolioPage() {
           {/* Print-only Report Header */}
           <div data-print-header className="hidden print:flex justify-between items-center mb-4 pb-3 border-b-2 border-[#8B0A3D]">
             <div className="flex items-center gap-2">
-              <img src="/favicon.ico" alt="RCG" className="h-7 w-7" />
+              <Image src="/favicon.ico" alt="RCG" width={28} height={28} className="h-7 w-7" />
               <div>
                 <div className="text-[10pt] font-bold text-[#8B0A3D]">RISING CAPITAL GROUP</div>
                 <div className="text-[7pt] text-[#9B8A92]">Portfolio Analytics</div>

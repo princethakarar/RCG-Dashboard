@@ -2,8 +2,6 @@
 
 import { usePathname } from 'next/navigation';
 import { usePortfolio } from '../../hooks/usePortfolioData';
-import { Button } from '../ui/button';
-import { Download } from 'lucide-react';
 
 export const PageHeader: React.FC = () => {
   const pathname = usePathname();
@@ -12,27 +10,6 @@ export const PageHeader: React.FC = () => {
 
   const metrics = isNetAsset ? netAssetMetrics : metrics3x;
   const data = isNetAsset ? netAssetData : data3x;
-
-  const handleDownload = async () => {
-    if (typeof window === 'undefined') return;
-
-    // Step 1: Ensure all fonts are loaded before printing
-    await document.fonts.ready;
-    
-    // Step 2: Wait one more frame for Recharts SVGs to finish rendering
-    await new Promise(resolve => requestAnimationFrame(resolve));
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // Step 3: Set document title (becomes PDF filename)
-    const originalTitle = document.title;
-    document.title = `RCG_Intern_Portfolio_3x_${new Date().toISOString().slice(0, 10)}`;
-    
-    // Step 4: Print
-    window.print();
-    
-    // Step 5: Restore title
-    document.title = originalTitle;
-  };
 
   const tradingDays = metrics ? metrics.totalDays : 27;
 

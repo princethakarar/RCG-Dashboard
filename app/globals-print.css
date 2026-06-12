@@ -1,0 +1,212 @@
+/* ============================================
+   RISING CAPITAL GROUP — PRINT / PDF STYLES
+   @media print — A4 Portrait, 210mm × 297mm
+   ============================================ */
+
+@media print {
+
+  /* ── Page setup ── */
+  @page {
+    size: A4 portrait;
+    margin: 14mm 12mm 14mm 12mm;  /* top right bottom left */
+  }
+
+  /* ── Reset browser print defaults ── */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* ── Hide elements that must NOT appear in PDF ── */
+  [data-print="hide"],
+  .topnav,
+  nav,
+  header nav,
+  [class*="TopNav"],
+  [class*="topnav"],
+  footer,
+  [class*="Footer"],
+  [class*="footer"],
+  .download-btn,
+  button[data-download],
+  .no-print {
+    display: none !important;
+  }
+
+  /* ── Body and page setup ── */
+  html, body {
+    width: 210mm;
+    min-height: 297mm;
+    background: #FFFFFF !important;
+    font-family: 'Inter', Arial, sans-serif !important;
+  }
+
+  /* ── Main content: full width, no sidebar padding ── */
+  main,
+  [data-print-content],
+  .intern-portfolio-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* ── Page header: show date range + title ── */
+  .page-header {
+    padding: 0 0 12pt 0 !important;
+    margin-bottom: 12pt !important;
+    border-bottom: 1pt solid #EDE0E6 !important;
+  }
+
+  /* ── Cards: no box-shadow in print (saves ink, avoids artifacts) ── */
+  .card,
+  [class*="Card"],
+  [data-card] {
+    box-shadow: none !important;
+    border: 1pt solid #EDE0E6 !important;
+    background: #FFFFFF !important;
+    break-inside: avoid !important;   /* don't split a card across pages */
+  }
+
+  /* ── KPI cards row: keep on one line, don't break ── */
+  .kpi-row,
+  [data-kpi-row] {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 8pt !important;
+    break-inside: avoid !important;
+    break-after: avoid !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  /* ── Individual KPI card: never split ── */
+  .kpi-card,
+  [data-kpi-card] {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* ── Chart containers: never split mid-chart ── */
+  [data-chart],
+  .recharts-wrapper,
+  .chart-card,
+  [data-chart-card] {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  /* ── Full-width charts (Chart 1, Chart 3, Swing chart) ── */
+  [data-chart-full] {
+    width: 100% !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    break-before: auto !important;
+  }
+
+  /* ── 50/50 chart row ── */
+  [data-chart-row] {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8pt !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* ── Stat cards row ── */
+  [data-stat-row] {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 8pt !important;
+    break-inside: avoid !important;
+  }
+
+  /* ── Return Distribution section ── */
+  [data-distribution-section] {
+    display: grid !important;
+    grid-template-columns: 58% 42% !important;
+    gap: 8pt !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* ── shadcn Table: borders visible in print ── */
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+  th, td {
+    border-bottom: 0.5pt solid #EDE0E6 !important;
+    padding: 5pt 6pt !important;
+    font-size: 8pt !important;
+  }
+  thead th {
+    background: #F8F4F6 !important;
+    font-weight: 600 !important;
+    font-size: 7pt !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.3pt !important;
+  }
+
+  /* ── Recharts: ensure colors print ── */
+  .recharts-surface {
+    overflow: visible !important;
+  }
+  .recharts-legend-wrapper {
+    break-inside: avoid !important;
+  }
+  svg text {
+    font-family: 'Inter', Arial, sans-serif !important;
+  }
+
+  /* ── Summary panel in Chart 1: prevent overflow clipping ── */
+  [data-summary-panel] {
+    overflow: visible !important;
+    min-width: 160pt !important;
+  }
+
+  /* ── Explicit page break points ── */
+  /* Force new page BEFORE the Distribution section */
+  [data-page-break-before] {
+    break-before: page !important;
+    page-break-before: always !important;
+  }
+
+  /* Force new page BEFORE the Swing chart */
+  [data-swing-chart] {
+    break-before: page !important;
+    page-break-before: always !important;
+  }
+
+  /* ── Print-specific footer (replaces the web footer) ── */
+  [data-print-footer] {
+    display: block !important;
+    margin-top: 16pt !important;
+    padding-top: 10pt !important;
+    border-top: 1pt solid #EDE0E6 !important;
+    font-size: 7pt !important;
+    color: #9B8A92 !important;
+  }
+
+  /* ── Print header watermark (optional branding) ── */
+  [data-print-header] {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 10pt !important;
+    padding-bottom: 8pt !important;
+    border-bottom: 2pt solid #8B0A3D !important;
+  }
+
+  /* ── Font sizes: slightly smaller for A4 ── */
+  .kpi-value { font-size: 20pt !important; }
+  .kpi-label { font-size: 6pt !important; }
+  .kpi-sublabel { font-size: 6pt !important; }
+  .chart-title { font-size: 9pt !important; }
+  .chart-subtitle { font-size: 7pt !important; }
+  .section-title { font-size: 10pt !important; }
+  .insight-text { font-size: 7pt !important; }
+}

@@ -3,25 +3,160 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --background: #FFFFFF;
+  --foreground: #1A0A10;
+  
+  --brand-primary: #8B0A3D;
+  --brand-secondary: #6B0830;
+  --brand-accent: #C41E5A;
+  --brand-surface: #F8F4F6;
+  --brand-border: #EDE0E6;
+  --brand-text-primary: #1A0A10;
+  --brand-text-secondary: #6B4A58;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --pnl-positive: #16A34A;
+  --pnl-negative: #DC2626;
+  --pnl-neutral: #92400E;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  overflow-x: hidden;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+/* Tabular numbers for financial metrics */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Premium Card Hover Effects */
+.premium-card {
+  background-color: var(--background);
+  border: 1px solid var(--brand-border);
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(139, 10, 61, 0.04);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.premium-card:hover {
+  box-shadow: 0 4px 20px rgba(139, 10, 61, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Custom Scrollbar for modern feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--brand-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-text-secondary);
+}
+
+/* Recharts tooltip overrides */
+.recharts-default-tooltip {
+  border: 1px solid var(--brand-border) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(139, 10, 61, 0.08) !important;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
+
+.animate-fade-in {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Typography scale (Inter font) */
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1A0A10;
+  letter-spacing: -0.3px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1A0A10;
+  letter-spacing: -0.1px;
+}
+
+.section-subtitle {
+  font-size: 12px;
+  font-weight: 400;
+  color: #9B8A92;
+  margin-top: 2px;
+}
+
+.kpi-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9B8A92;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-sublabel {
+  font-size: 11px;
+  font-weight: 400;
+  color: #9B8A92;
+}
+
+.table-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9B8A92;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1A0A10;
+}
+
+/* Premium Card Clean - Minimalist upgrade */
+.premium-card-clean {
+  background: #FFFFFF;
+  border: 1px solid #EDE0E6;
+  border-radius: 14px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+/* shadcn Card override to remove shadows */
+.card {
+  box-shadow: none !important;
+  border-color: #EDE0E6 !important;
+}
+
+

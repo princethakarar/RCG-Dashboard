@@ -8,7 +8,7 @@
   /* ── Page setup ── */
   @page {
     size: A4 portrait;
-    margin: 14mm 12mm 14mm 12mm;  /* top right bottom left */
+    margin: 8mm 10mm 8mm 10mm;  /* top right bottom left */
   }
 
   /* ── Reset browser print defaults ── */
@@ -52,21 +52,52 @@
     margin: 0 !important;
   }
 
+  /* Reduce space-y-6 margin in print */
+  main {
+    margin-top: 4pt !important;
+  }
+  .space-y-6 > * + * {
+    margin-top: 6pt !important;
+  }
+  .gap-6 {
+    gap: 6pt !important;
+  }
+
   /* ── Page header: show date range + title ── */
   .page-header {
-    padding: 0 0 12pt 0 !important;
-    margin-bottom: 12pt !important;
+    padding: 0 0 8pt 0 !important;
+    margin-bottom: 8pt !important;
     border-bottom: 1pt solid #EDE0E6 !important;
   }
 
   /* ── Cards: no box-shadow in print (saves ink, avoids artifacts) ── */
   .card,
   [class*="Card"],
-  [data-card] {
+  [data-card],
+  [data-chart-card] {
     box-shadow: none !important;
     border: 1pt solid #EDE0E6 !important;
     background: #FFFFFF !important;
     break-inside: avoid !important;   /* don't split a card across pages */
+    padding: 0 !important;
+    border-radius: 8pt !important;
+  }
+  
+  .card > div,
+  [class*="Card"] > div {
+    padding: 8pt 10pt !important;
+  }
+  .px-6.pt-6.pb-6,
+  .px-6.pb-6.pt-4,
+  .p-5,
+  .pt-5,
+  .pb-5,
+  .px-5 {
+    padding: 6pt 8pt !important;
+  }
+  .mt-6,
+  .mt-4 {
+    margin-top: 4pt !important;
   }
 
   /* ── KPI cards row: keep on one line, don't break ── */
@@ -74,7 +105,7 @@
   [data-kpi-row] {
     display: grid !important;
     grid-template-columns: repeat(5, 1fr) !important;
-    gap: 8pt !important;
+    gap: 6pt !important;
     break-inside: avoid !important;
     break-after: avoid !important;
     page-break-inside: avoid !important;
@@ -111,7 +142,7 @@
   [data-chart-row] {
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
-    gap: 8pt !important;
+    gap: 6pt !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
@@ -120,7 +151,7 @@
   [data-stat-row] {
     display: grid !important;
     grid-template-columns: repeat(4, 1fr) !important;
-    gap: 8pt !important;
+    gap: 6pt !important;
     break-inside: avoid !important;
   }
 
@@ -128,9 +159,20 @@
   [data-distribution-section] {
     display: grid !important;
     grid-template-columns: 58% 42% !important;
-    gap: 8pt !important;
+    gap: 6pt !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+  }
+
+  /* Override chart heights specifically in print */
+  main .h-\[280px\] {
+    height: 165px !important;
+  }
+  main .h-\[240px\] {
+    height: 135px !important;
+  }
+  main .h-\[320px\] {
+    height: 180px !important;
   }
 
   /* ── shadcn Table: borders visible in print ── */
@@ -140,13 +182,13 @@
   }
   th, td {
     border-bottom: 0.5pt solid #EDE0E6 !important;
-    padding: 5pt 6pt !important;
-    font-size: 8pt !important;
+    padding: 3pt 4pt !important;
+    font-size: 7.5pt !important;
   }
   thead th {
     background: #F8F4F6 !important;
     font-weight: 600 !important;
-    font-size: 7pt !important;
+    font-size: 6.5pt !important;
     text-transform: uppercase !important;
     letter-spacing: 0.3pt !important;
   }
@@ -157,15 +199,22 @@
   }
   .recharts-legend-wrapper {
     break-inside: avoid !important;
+    font-size: 7.5pt !important;
   }
   svg text {
     font-family: 'Inter', Arial, sans-serif !important;
+    font-size: 7.5pt !important;
   }
 
   /* ── Summary panel in Chart 1: prevent overflow clipping ── */
   [data-summary-panel] {
     overflow: visible !important;
-    min-width: 160pt !important;
+    min-width: 120pt !important;
+    width: 120pt !important;
+    padding-left: 8pt !important;
+  }
+  [data-summary-panel] .space-y-4 {
+    margin-top: 0 !important;
   }
 
   /* ── Explicit page break points ── */
@@ -175,19 +224,19 @@
     page-break-before: always !important;
   }
 
-  /* Force new page BEFORE the Swing chart */
+  /* Flow Swing chart directly below Return Distribution on Page 2 */
   [data-swing-chart] {
-    break-before: page !important;
-    page-break-before: always !important;
+    break-before: auto !important;
+    page-break-before: auto !important;
   }
 
   /* ── Print-specific footer (replaces the web footer) ── */
   [data-print-footer] {
     display: block !important;
-    margin-top: 16pt !important;
-    padding-top: 10pt !important;
+    margin-top: 10pt !important;
+    padding-top: 8pt !important;
     border-top: 1pt solid #EDE0E6 !important;
-    font-size: 7pt !important;
+    font-size: 6.5pt !important;
     color: #9B8A92 !important;
   }
 
@@ -196,15 +245,26 @@
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
-    margin-bottom: 10pt !important;
-    padding-bottom: 8pt !important;
+    margin-bottom: 8pt !important;
+    padding-bottom: 6pt !important;
     border-bottom: 2pt solid #8B0A3D !important;
   }
 
   /* ── Font sizes: slightly smaller for A4 ── */
-  .kpi-value { font-size: 20pt !important; }
-  .kpi-label { font-size: 6pt !important; }
-  .kpi-sublabel { font-size: 6pt !important; }
+  .kpi-row .text-\[28px\],
+  [data-stat-row] .text-\[28px\],
+  .kpi-value {
+    font-size: 16pt !important;
+    margin-top: 2pt !important;
+  }
+  .kpi-row p,
+  [data-stat-row] p,
+  .kpi-label,
+  .kpi-sublabel {
+    font-size: 6.5pt !important;
+    margin-top: 1pt !important;
+    line-height: 1.2 !important;
+  }
   .chart-title { font-size: 9pt !important; }
   .chart-subtitle { font-size: 7pt !important; }
   .section-title { font-size: 10pt !important; }

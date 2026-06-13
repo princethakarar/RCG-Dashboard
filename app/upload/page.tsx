@@ -31,7 +31,10 @@ export default function UploadPage() {
         <UploadZone 
           files={files} 
           onUploadSuccess={() => {
+            // Immediate refetch
             refetch();
+            // Safety-net second refetch after 3s to catch Vercel Blob propagation delay
+            setTimeout(() => refetch(), 3000);
           }} 
         />
 

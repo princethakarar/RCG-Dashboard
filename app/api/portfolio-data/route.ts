@@ -171,6 +171,19 @@ export async function GET() {
           const low = parseFloatValueOrNull(row[8]);
           const close = parseFloatValueOrNull(row[9]);
 
+          // Exclude any row where an error occurred, a value is -100, or the row is not fully filled
+          if (
+            row[1] === null || row[1] === undefined || row[1] === '' ||
+            row[2] === null || row[2] === undefined || row[2] === '' ||
+            row[3] === null || row[3] === undefined || row[3] === '' ||
+            niftyDaily === null ||
+            niftyCont === null ||
+            swing === null ||
+            runningROI === 0
+          ) {
+            continue;
+          }
+
           fileRows.push({
             dateKey,
             data: {

@@ -69,7 +69,7 @@ export const Footer: React.FC = () => {
             className="text-[18px] font-light italic tracking-wide"
             style={{ color: '#FFFFFF' }}
           >
-            &ldquo;Don't follow us—follow the process. Don't believe opinions—believe the data. Anyone can trade, but only a few have the discipline to follow the process.&rdquo;
+            &ldquo;Don&apos;t follow us—follow the process. Don&apos;t believe opinions—believe the data. Anyone can trade, but only a few have the discipline to follow the process.&rdquo;
           </p>
           <p 
             className="text-[11px] font-black mt-2 uppercase tracking-[0.25em]"

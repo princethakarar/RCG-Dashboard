@@ -68,7 +68,10 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUploadSuccess, files }
       const json = await res.ok ? await res.json() : null;
       if (res.ok && json?.success) {
         setSuccessMsg(`${file.name} ✓ Added to data folder`);
+        // Wait for Vercel Blob to propagate in production before re-fetching dashboard data
+        await new Promise(resolve => setTimeout(resolve, 2500));
         onUploadSuccess(); // Trigger refetch of list in parent
+
       } else {
         throw new Error(json?.error || 'Failed to upload file');
       }

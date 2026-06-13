@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { unstable_noStore as noStore } from 'next/cache';
 import { list } from '@vercel/blob';
 import * as XLSX from 'xlsx';
 import { PortfolioRow, LoadedFile } from '../../lib/types';
@@ -80,6 +81,9 @@ function isDataRow(row: ExcelCellValue[]): boolean {
 }
 
 export async function GET() {
+  // Explicitly opt out of Next.js Data Cache so Vercel Blob list() is never stale
+  noStore();
+
   try {
     // List all blobs under the 'data/' prefix
     const { blobs } = await list({ prefix: 'data/', token: process.env.BLOB_READ_WRITE_TOKEN });
@@ -263,13 +267,23 @@ export async function GET() {
     const sortedData = Array.from(allRows.values()).sort((a, b) => a.date.localeCompare(b.date));
     const sortedNetAssetData = Array.from(allNetAssetRows.values()).sort((a, b) => a.date.localeCompare(b.date));
     
-    return NextResponse.json({ 
-      data: sortedData, 
-      netAssetData: sortedNetAssetData,
-      files: loadedFiles 
-    });
+    return NextResponse.json(
+      { data: sortedData, netAssetData: sortedNetAssetData, files: loadedFiles },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Surrogate-Control': 'no-store',
+          'CDN-Cache-Control': 'no-store',
+          'Vercel-CDN-Cache-Control': 'no-store',
+        },
+      }
+    );
   } catch (error: unknown) {
     console.error('Error in GET /api/portfolio-data:', error);
-    return NextResponse.json({ error: (error as Error).message || 'Server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: (error as Error).message || 'Server error' },
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { put, del } from '@vercel/blob';
 
 export async function POST(req: NextRequest) {
@@ -20,6 +21,9 @@ export async function POST(req: NextRequest) {
       allowOverwrite: true,
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
+
+    // Bust the Next.js server-side cache for the data endpoint
+    revalidatePath('/api/portfolio-data');
 
     return NextResponse.json({ success: true, filename: file.name, url: blob.url });
   } catch (error: unknown) {
@@ -43,6 +47,9 @@ export async function DELETE(req: NextRequest) {
     }
 
     await del(url, { token: process.env.BLOB_READ_WRITE_TOKEN });
+
+    // Bust the cache after deletion too
+    revalidatePath('/api/portfolio-data');
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

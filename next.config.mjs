@@ -11,4 +11,5 @@ const nextConfig = {
   },
 };
 
+// Trigger redeploy to load Vercel Blob environment variables
 export default nextConfig;

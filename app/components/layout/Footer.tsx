@@ -5,35 +5,58 @@ import Image from 'next/image';
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="w-full bg-[#0F0208] text-white/90 py-10 px-6 md:px-10 font-sans mt-auto select-none border-t border-rcg-maroonDark/40">
-      <div className="max-w-[1400px] mx-auto space-y-8">
+    <footer 
+      className="w-full py-12 px-6 md:px-10 font-sans mt-auto select-none border-t"
+      style={{ 
+        backgroundColor: '#0F0208', 
+        borderColor: 'rgba(196, 30, 90, 0.25)',
+      }}
+    >
+      <div className="max-w-[1400px] mx-auto space-y-10">
         
         {/* Top Header Row */}
-        <div className="flex flex-col md:flex-row justify-between gap-8 border-b border-white/10 pb-8">
+        <div 
+          className="flex flex-col md:flex-row justify-between gap-8 pb-8 border-b"
+          style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}
+        >
           {/* Logo & Brand */}
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
               <Image 
                 src="/logo.png" 
                 alt="Rising Capital Group" 
-                width={120}
-                height={40}
-                className="h-10 w-auto object-contain brightness-0 invert" 
+                width={180}
+                height={65}
+                className="h-14 w-auto object-contain brightness-0 invert" 
               />
             </div>
-            <div className="text-[11px] text-white/40 font-mono leading-relaxed mt-2">
-              <div>NSE F&O</div>
-              <div>NIFTY Options</div>
+            <div 
+              className="text-[12px] font-semibold tracking-wider uppercase font-mono mt-3 space-y-1"
+              style={{ color: '#C494A8' }}
+            >
+              <div>NSE F&O Partner</div>
+              <div>NIFTY Options Desk</div>
             </div>
           </div>
           
           {/* Contact / Address Info */}
-          <div className="flex flex-col md:items-end text-left md:text-right gap-2 text-white/70 text-xs">
-            <span className="font-bold text-white uppercase tracking-wider text-[11px]">Contact Us</span>
-            <p className="max-w-md text-white/50 leading-relaxed">
+          <div className="flex flex-col md:items-end text-left md:text-right gap-2">
+            <span 
+              className="font-extrabold uppercase tracking-widest text-[12px]"
+              style={{ color: '#FFAEC9' }}
+            >
+              Contact Us
+            </span>
+            <p 
+              className="max-w-md text-xs leading-relaxed font-medium"
+              style={{ color: '#EADCE3' }}
+            >
               Unit no :- P03-02A&B, 3rd Floor, Tower A, WTC Gift City, Block No 51, Road 5E, Zone-5 Gift City, Gandhinagar, Gujarat
             </p>
-            <div className="flex flex-col md:items-end gap-1 mt-1 text-white/50 font-mono text-[11px]">
+            <div 
+              className="flex flex-col md:items-end gap-1.5 mt-2 font-mono text-[12px] font-semibold"
+              style={{ color: '#C494A8' }}
+            >
               <span>Phone: +91 9316597989</span>
               <span>Email: info@risingcapitalgroup.in</span>
             </div>
@@ -42,22 +65,35 @@ export const Footer: React.FC = () => {
 
         {/* Brand Slogan */}
         <div className="py-2 text-center">
-          <p className="text-[17px] font-light italic text-white/90 font-sans tracking-wide">
+          <p 
+            className="text-[18px] font-light italic tracking-wide"
+            style={{ color: '#FFFFFF' }}
+          >
             &ldquo;Trust the data. Question the narrative.&rdquo;
           </p>
-          <p className="text-xs font-bold text-[#8B0A3D] mt-1.5 uppercase tracking-widest font-sans">
+          <p 
+            className="text-[11px] font-black mt-2 uppercase tracking-[0.25em]"
+            style={{ color: '#FFAEC9' }}
+          >
             — Rising Capital Group
           </p>
         </div>
 
         {/* Bottom Row */}
-        <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-[10.5px] text-white/30">
+        <div 
+          className="pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-[11px] border-t font-medium"
+          style={{ 
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            color: '#9E8592'
+          }}
+        >
           <span>&copy; {new Date().getFullYear()} Rising Capital Group. All rights reserved.</span>
           <a 
             href="https://risingcapitalgroup.in/" 
             target="_blank" 
             rel="noopener noreferrer" 
-            className="hover:text-[#C41E5A] transition-colors font-medium underline underline-offset-2"
+            className="transition-colors underline underline-offset-4 hover:brightness-125"
+            style={{ color: '#FF4A85' }}
           >
             risingcapitalgroup.in
           </a>

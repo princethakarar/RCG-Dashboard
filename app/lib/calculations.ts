@@ -64,15 +64,15 @@ export function computeMetrics(rows: PortfolioRow[]): PortfolioMetrics | null {
   const junCounts = rows.filter(r => r.date.startsWith('2026-06')).length;
   const monthlyBreakdown = getMonthlyBreakdown(rows);
 
-  // ROI Distribution buckets (optimized for 3x leveraged portfolio)
+  // ROI Distribution buckets (optimized for 3x leveraged portfolio - 5% slabs)
   const buckets = [
     { label: '< -10%',       min: -Infinity, max: -10,  color: '#450a0a', status: 'Severe Loss',    statusColor: '#DC2626' },
     { label: '-10% to -5%',  min: -10,       max: -5,   color: '#7F1D1D', status: 'Heavy Loss',     statusColor: '#DC2626' },
     { label: '-5% to 0%',    min: -5,        max: 0,    color: '#FCA5A5', status: 'Loss',           statusColor: '#F97316' },
-    { label: '0% to 2%',     min: 0,         max: 2,    color: '#BBF7D0', status: 'Moderate Gain',  statusColor: '#16A34A' },
-    { label: '2% to 5%',     min: 2,         max: 5,    color: '#16A34A', status: 'Good Gain',      statusColor: '#16A34A' },
-    { label: '5% to 10%',    min: 5,         max: 10,   color: '#166534', status: 'Strong Gain',    statusColor: '#14532D' },
-    { label: '> 10%',        min: 10,        max: Infinity, color: '#052e16', status: 'Exceptional', statusColor: '#14532D' },
+    { label: '0% to 5%',     min: 0,         max: 5,    color: '#BBF7D0', status: 'Moderate Gain',  statusColor: '#16A34A' },
+    { label: '5% to 10%',    min: 5,         max: 10,   color: '#16A34A', status: 'Good Gain',      statusColor: '#16A34A' },
+    { label: '10% to 15%',   min: 10,        max: 15,   color: '#166534', status: 'Strong Gain',    statusColor: '#14532D' },
+    { label: '> 15%',        min: 15,        max: Infinity, color: '#052e16', status: 'Exceptional', statusColor: '#14532D' },
   ];
 
   const roiDistribution: BucketData[] = buckets.map(b => {
@@ -164,15 +164,18 @@ export function computeNetAssetMetrics(rows: PortfolioRow[]): PortfolioMetrics |
   const junCounts = rows.filter(r => r.date.startsWith('2026-06')).length;
   const monthlyBreakdown = getMonthlyBreakdown(rows);
 
-  // ROI Distribution buckets (7 ranges)
+  // ROI Distribution buckets (0.5% slabs for Net Asset)
   const buckets = [
-    { label: '< -10%',       min: -Infinity, max: -10,  color: '#450a0a', status: 'Severe Loss',    statusColor: '#DC2626' },
-    { label: '-10% to -5%',  min: -10,       max: -5,   color: '#7F1D1D', status: 'Heavy Loss',     statusColor: '#DC2626' },
-    { label: '-5% to 0%',    min: -5,        max: 0,    color: '#FCA5A5', status: 'Loss',           statusColor: '#F97316' },
-    { label: '0% to 2%',     min: 0,         max: 2,    color: '#BBF7D0', status: 'Moderate Gain',  statusColor: '#16A34A' },
-    { label: '2% to 5%',     min: 2,         max: 5,    color: '#16A34A', status: 'Good Gain',      statusColor: '#16A34A' },
-    { label: '5% to 10%',    min: 5,         max: 10,   color: '#166534', status: 'Strong Gain',    statusColor: '#14532D' },
-    { label: '> 10%',        min: 10,        max: Infinity, color: '#052e16', status: 'Exceptional', statusColor: '#14532D' },
+    { label: '< -2.0%',        min: -Infinity, max: -2.0, color: '#450a0a', status: 'Severe Loss',    statusColor: '#DC2626' },
+    { label: '-2.0% to -1.5%', min: -2.0,      max: -1.5, color: '#7F1D1D', status: 'Heavy Loss',     statusColor: '#DC2626' },
+    { label: '-1.5% to -1.0%', min: -1.5,      max: -1.0, color: '#B91C1C', status: 'Moderate Loss',  statusColor: '#EF4444' },
+    { label: '-1.0% to -0.5%', min: -1.0,      max: -0.5, color: '#F87171', status: 'Low Loss',       statusColor: '#F87171' },
+    { label: '-0.5% to 0.0%',  min: -0.5,      max: 0.0,  color: '#FCA5A5', status: 'Minor Loss',     statusColor: '#FCA5A5' },
+    { label: '0.0% to 0.5%',   min: 0.0,       max: 0.5,  color: '#BBF7D0', status: 'Minor Gain',     statusColor: '#22C55E' },
+    { label: '0.5% to 1.0%',   min: 0.5,       max: 1.0,  color: '#86EFAC', status: 'Low Gain',       statusColor: '#22C55E' },
+    { label: '1.0% to 1.5%',   min: 1.0,       max: 1.5,  color: '#4ADE80', status: 'Good Gain',      statusColor: '#22C55E' },
+    { label: '1.5% to 2.0%',   min: 1.5,       max: 2.0,  color: '#16A34A', status: 'Strong Gain',    statusColor: '#16A34A' },
+    { label: '> 2.0%',         min: 2.0,       max: Infinity, color: '#15803D', status: 'Exceptional', statusColor: '#15803D' },
   ];
 
   const roiDistribution: BucketData[] = buckets.map(b => {

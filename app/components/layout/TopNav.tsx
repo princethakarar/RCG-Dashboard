@@ -29,8 +29,8 @@ export const TopNav: React.FC = () => {
 
   const navItems = [
     { name: 'Dashboard', path: '/' },
-    { name: 'Intern Portfolio 3x', path: '/intern-portfolio' },
-    { name: 'Intern Portfolio Net Asset', path: '/net-asset' },
+    { name: 'Rising intern Portfolio 3x', path: '/intern-portfolio' },
+    { name: 'Rising intern Portfolio Net Asset', path: '/net-asset' },
     { name: 'Upload Data', path: '/upload' },
   ];
 

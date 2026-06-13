@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { UploadCloud, CheckCircle, AlertCircle, FileSpreadsheet, RefreshCw } from 'lucide-react';
+import { UploadCloud, CheckCircle, AlertCircle, FileSpreadsheet, RefreshCw, Trash2 } from 'lucide-react';
 import { LoadedFile } from '../../lib/types';
 
 interface UploadZoneProps {
@@ -16,6 +16,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUploadSuccess, files }
   const [uploading, setUploading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [deletingUrls, setDeletingUrls] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = (e: React.DragEvent) => {
@@ -76,6 +77,35 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUploadSuccess, files }
       setError((err as Error).message || 'Something went wrong during file upload.');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDelete = async (url: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to remove the file "${name}"?`)) {
+      return;
+    }
+
+    setDeletingUrls(prev => [...prev, url]);
+    setError(null);
+    setSuccessMsg(null);
+
+    try {
+      const res = await fetch(`/api/upload?url=${encodeURIComponent(url)}`, {
+        method: 'DELETE',
+      });
+
+      const json = await res.ok ? await res.json() : null;
+      if (res.ok && json?.success) {
+        setSuccessMsg(`Successfully removed "${name}"`);
+        onUploadSuccess();
+      } else {
+        throw new Error(json?.error || 'Failed to delete file');
+      }
+    } catch (err: unknown) {
+      console.error(err);
+      setError((err as Error).message || 'Something went wrong during file deletion.');
+    } finally {
+      setDeletingUrls(prev => prev.filter(u => u !== url));
     }
   };
 
@@ -180,10 +210,25 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUploadSuccess, files }
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                <div className="flex items-center gap-3 self-start sm:self-auto shrink-0">
                   <span className="px-2 py-0.5 bg-brand-accent/15 text-brand-accent border border-brand-accent/20 text-[10px] font-bold rounded">
                     {file.rowCount} rows
                   </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(file.url, file.name);
+                    }}
+                    disabled={deletingUrls.includes(file.url)}
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                    title="Remove file"
+                  >
+                    {deletingUrls.includes(file.url) ? (
+                      <RefreshCw size={14} className="animate-spin text-red-600" />
+                    ) : (
+                      <Trash2 size={14} />
+                    )}
+                  </button>
                 </div>
               </div>
             ))}

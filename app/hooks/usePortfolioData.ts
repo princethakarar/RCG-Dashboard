@@ -32,7 +32,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/portfolio-data');
+      const res = await fetch('/api/portfolio-data', { cache: 'no-store' });
       if (!res.ok) {
         throw new Error('Failed to load portfolio data');
       }

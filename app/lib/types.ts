@@ -43,6 +43,7 @@ export interface PortfolioMetrics {
 
 export interface LoadedFile {
   name: string;
+  url: string;
   startDate: string;
   endDate: string;
   rowCount: number;

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import * as fs from 'fs';
-import * as path from 'path';
+import { list } from '@vercel/blob';
 import * as XLSX from 'xlsx';
 import { PortfolioRow, LoadedFile } from '../../lib/types';
+
+export const dynamic = 'force-dynamic';
 
 type ExcelCellValue = string | number | Date | null | undefined;
 
@@ -55,28 +56,73 @@ function parseFloatValueOrNull(val: unknown): number | null {
   return isNaN(parsed) ? null : parsed;
 }
 
+// A row has a valid date if col 0 is a JS Date object or a positive Excel serial number
+function isDateCellFilled(val: unknown): boolean {
+  if (val === null || val === undefined) return false;
+  if (val instanceof Date) return !isNaN(val.getTime());
+  if (typeof val === 'number') return val > 40000; // Excel serials after 2009
+  return false;
+}
+
+// Net MTM (col 1) must be a real number — empty string or null means the row isn't filled yet
+function isMtmCellFilled(val: unknown): boolean {
+  if (val === null || val === undefined) return false;
+  if (typeof val === 'number') return true;
+  if (typeof val === 'string') return val.trim() !== '';
+  return false;
+}
+
+// A row is considered valid data if it has a date AND a net MTM value.
+// Other columns (Nifty, swing, etc.) may have formula errors and are treated as nullable.
+function isDataRow(row: ExcelCellValue[]): boolean {
+  if (!row || row.length === 0) return false;
+  return isDateCellFilled(row[0]) && isMtmCellFilled(row[1]);
+}
+
 export async function GET() {
   try {
-    const dataDir = path.join(process.cwd(), 'data');
-    
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-      return NextResponse.json({ data: [], files: [] });
-    }
-    
-    const fileNames = fs.readdirSync(dataDir).filter(f => f.endsWith('.xlsx') && !f.startsWith('~$'));
+    // List all blobs under the 'data/' prefix
+    const { blobs } = await list({ prefix: 'data/', token: process.env.BLOB_READ_WRITE_TOKEN });
+
+    // Filter to only .xlsx files (exclude temp Excel lock files)
+    const xlsxBlobs = blobs.filter(
+      (b) => b.pathname.endsWith('.xlsx') && !b.pathname.split('/').pop()?.startsWith('~$')
+    );
+
     const allRows: Map<string, PortfolioRow> = new Map();
     const allNetAssetRows: Map<string, PortfolioRow> = new Map();
     const loadedFiles: LoadedFile[] = [];
 
-    for (const file of fileNames) {
-      const filePath = path.join(dataDir, file);
-      const stats = fs.statSync(filePath);
-      if (stats.size === 0) continue;
+    console.log(`[portfolio-data] Found ${xlsxBlobs.length} xlsx blobs`);
+    console.log(`[portfolio-data] Token present: ${!!process.env.BLOB_READ_WRITE_TOKEN}`);
 
-      const fileBuffer = fs.readFileSync(filePath);
+    for (const blob of xlsxBlobs) {
+      console.log(`[portfolio-data] blob.url: ${blob.url}`);
+      console.log(`[portfolio-data] blob.downloadUrl: ${blob.downloadUrl?.substring(0, 80)}...`);
+
+      // For private blobs, authenticate the fetch with the Bearer token
+      const response = await fetch(blob.url, {
+        headers: {
+          Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`,
+        },
+        cache: 'no-store',
+      });
+      console.log(`[portfolio-data] fetch status: ${response.status}`);
+      if (!response.ok) {
+        console.error(`Failed to fetch blob ${blob.pathname}: ${response.status} ${response.statusText}`);
+        continue;
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const fileBuffer = Buffer.from(arrayBuffer);
+
+      if (fileBuffer.length === 0) continue;
+
       const wb = XLSX.read(fileBuffer, { type: 'buffer', cellDates: true });
-      
+      const fileName = blob.pathname.replace(/^data\//, '');
+
+      console.log(`[portfolio-data] Sheet names in ${fileName}:`, JSON.stringify(wb.SheetNames));
+
       // 1. Process 3x Sheet
       const sheetName = wb.SheetNames.find(s => {
         const norm = s.trim().toUpperCase();
@@ -94,11 +140,12 @@ export async function GET() {
         
         for (let i = 1; i < raw.length; i++) {
           const row = raw[i];
-          if (!row || !row[0] || row[1] == null) continue;
+          // Stop when we reach a row without a date or MTM — that's the end of real data
+          if (!isDataRow(row)) break;
           
           const dateVal = row[0];
           const dateKey = parseExcelDate(dateVal);
-          if (!dateKey) continue;
+          if (!dateKey) break;
 
           const netMTM = parseFloatValue(row[1]);
           const roiOnDeposit = parseFloatValue(row[2]);
@@ -137,9 +184,6 @@ export async function GET() {
           });
         }
 
-        if (fileRows.length > 0) {
-          fileRows.pop();
-        }
 
         for (const item of fileRows) {
           allRows.set(item.dateKey, item.data);
@@ -162,11 +206,12 @@ export async function GET() {
 
         for (let i = 1; i < rawNet.length; i++) {
           const row = rawNet[i];
-          if (!row || !row[0] || row[1] == null || row[1] === '') continue;
+          // Stop when we reach a row without a date or MTM — that's the end of real data
+          if (!isDataRow(row)) break;
 
           const dateVal = row[0];
           const dateKey = parseExcelDate(dateVal);
-          if (!dateKey) continue;
+          if (!dateKey) break;
 
           const netMTM = parseFloatValue(row[1]);
           const runningROI = parseFloatValue(row[2]);
@@ -205,7 +250,8 @@ export async function GET() {
 
       if (fileRowCount > 0) {
         loadedFiles.push({
-          name: file,
+          name: fileName,
+          url: blob.url,
           startDate: fileMinDate,
           endDate: fileMaxDate,
           rowCount: fileRowCount,

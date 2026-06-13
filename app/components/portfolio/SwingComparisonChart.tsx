@@ -166,7 +166,7 @@ export const SwingComparisonChart: React.FC<SwingComparisonChartProps> = ({ data
           <div className="flex items-center gap-2">
             <span className="w-6 h-0.5 bg-[#8B0A3D] inline-block" style={{ borderTop: '2px dashed #8B0A3D' }} />
             <span className="text-[12px] font-bold text-[#8B0A3D] font-sans">
-              Avg Portfolio Swing: {metrics.avgDailyROI.toFixed(2)}%
+              Avg Portfolio Swing: {metrics.avgAbsDailyROI.toFixed(2)}%
             </span>
           </div>
           <div className="flex items-center gap-2">

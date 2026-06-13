@@ -80,6 +80,25 @@ function isDataRow(row: ExcelCellValue[]): boolean {
   return isDateCellFilled(row[0]) && isMtmCellFilled(row[1]);
 }
 
+function isCellValidAndFilled(val: unknown, checkZero = false): boolean {
+  if (val === null || val === undefined) return false;
+  
+  if (typeof val === 'string') {
+    const s = val.trim();
+    if (s === '') return false;
+    if (s.includes('#')) return false; // Excel formula errors like #VALUE!, #N/A, #REF!, etc.
+    if (s === '-100' || s === '-100%') return false;
+  }
+  
+  if (typeof val === 'number') {
+    if (isNaN(val) || !isFinite(val)) return false;
+    if (val === -100) return false;
+    if (checkZero && val === 0) return false;
+  }
+  
+  return true;
+}
+
 export async function GET() {
   // Explicitly opt out of Next.js Data Cache so Vercel Blob list() is never stale
   noStore();
@@ -155,17 +174,9 @@ export async function GET() {
           const roiOnDeposit = parseFloatValue(row[2]);
           const runningROI = parseFloatValue(row[3]);
           
-          let niftyDaily = parseFloatValueOrNull(row[4]);
-          let niftyCont = parseFloatValueOrNull(row[5]);
-          let swing = parseFloatValueOrNull(row[6]);
-
-          const isNiftyError = niftyDaily === null || niftyDaily === -100 || niftyDaily === -1 || Math.abs(niftyDaily) > 50;
-          const isNiftyContError = niftyCont === null || niftyCont === -100 || niftyCont === -1 || Math.abs(niftyCont) > 50;
-          const isSwingError = swing === null || swing === -100 || swing === -1 || Math.abs(swing) > 50;
-
-          niftyDaily = isNiftyError ? null : niftyDaily;
-          niftyCont = isNiftyContError ? null : niftyCont;
-          swing = isSwingError ? null : swing;
+          const niftyDaily = parseFloatValueOrNull(row[4]);
+          const niftyCont = parseFloatValueOrNull(row[5]);
+          const swing = parseFloatValueOrNull(row[6]);
 
           const high = parseFloatValueOrNull(row[7]);
           const low = parseFloatValueOrNull(row[8]);
@@ -173,13 +184,13 @@ export async function GET() {
 
           // Exclude any row where an error occurred, a value is -100, or the row is not fully filled
           if (
-            row[1] === null || row[1] === undefined || row[1] === '' ||
-            row[2] === null || row[2] === undefined || row[2] === '' ||
-            row[3] === null || row[3] === undefined || row[3] === '' ||
-            niftyDaily === null ||
-            niftyCont === null ||
-            swing === null ||
-            runningROI === 0
+            !isCellValidAndFilled(row[0]) ||
+            !isCellValidAndFilled(row[1]) ||
+            !isCellValidAndFilled(row[2]) ||
+            !isCellValidAndFilled(row[3], true) ||
+            !isCellValidAndFilled(row[4]) ||
+            !isCellValidAndFilled(row[5]) ||
+            !isCellValidAndFilled(row[6])
           ) {
             continue;
           }
@@ -240,8 +251,18 @@ export async function GET() {
           const low = parseFloatValueOrNull(row[8]);
           const close = parseFloatValueOrNull(row[9]);
 
-          // Validation condition: exclude any row where NIFTY NET CONTINUE equals -100 OR RUNNING ROI equals 0 OR DATE is blank/null
-          if (niftyCont === -100 || runningROI === 0) continue;
+          // Validation condition: exclude any row where an error occurred, a value is -100, or the row is not fully filled
+          if (
+            !isCellValidAndFilled(row[0]) ||
+            !isCellValidAndFilled(row[1]) ||
+            !isCellValidAndFilled(row[2], true) || // runningROI shouldn't be 0
+            !isCellValidAndFilled(row[3]) || // dayROI
+            !isCellValidAndFilled(row[4]) || // niftyDaily
+            !isCellValidAndFilled(row[5]) || // niftyCont
+            !isCellValidAndFilled(row[6])    // swing
+          ) {
+            continue;
+          }
 
           fileNetAssetRows.push({
             dateKey,

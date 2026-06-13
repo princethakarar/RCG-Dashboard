@@ -35,7 +35,7 @@ export const AvgNiftySwingCard: React.FC<SwingCardsProps> = ({ metrics }) => {
 };
 
 export const AvgPortfolioSwingCard: React.FC<SwingCardsProps> = ({ metrics }) => {
-  const { totalDays, leverageRatio, avgDailyROI } = metrics;
+  const { totalDays, leverageRatio, avgAbsDailyROI } = metrics;
 
   return (
     <Card className="border border-[#EDE0E6] shadow-none rounded-2xl select-none h-full flex flex-col">
@@ -45,7 +45,7 @@ export const AvgPortfolioSwingCard: React.FC<SwingCardsProps> = ({ metrics }) =>
             AVG PORTFOLIO SWING
           </span>
           <h3 className="text-[28px] font-extrabold tabular-nums mt-4 leading-none tracking-tight text-[#1A0A10]">
-            {avgDailyROI.toFixed(2)}%
+            {avgAbsDailyROI.toFixed(2)}%
           </h3>
           <span className="text-[11px] text-[#9B8A92] mt-1.5 block">
             Average daily ROI magnitude (Swing)

@@ -24,7 +24,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ metrics }) => {
     currentRunningROI,
     winRatio,
     totalDays,
-    avgDailyROI,
+    avgAbsDailyROI,
     avgNiftySwing,
     winDays,
     dateRange
@@ -138,7 +138,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ metrics }) => {
         </CardHeader>
         <CardContent className="px-5 pb-5">
           <div className="text-[28px] font-extrabold tabular-nums tracking-tight text-[#1A0A10]">
-            {avgDailyROI.toFixed(2)}%
+            {avgAbsDailyROI.toFixed(2)}%
           </div>
           <p className="text-[11px] text-[#9B8A92] mt-1.5 font-sans">
             Average daily ROI magnitude (Swing)

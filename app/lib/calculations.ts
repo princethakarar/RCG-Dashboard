@@ -27,13 +27,14 @@ export function computeMetrics(rows: PortfolioRow[]): PortfolioMetrics | null {
   const lossDays = rows.length - winDays;
   const winRatio = (winDays / rows.length) * 100;
 
-  const validSwing = rows.filter(r => r.dailySwing !== null && r.dailySwing > 0);
+  // Avg Nifty Swing: AVERAGE(col G / dailySwing) across rows where dailySwing is not null
+  const validSwing = rows.filter(r => r.dailySwing !== null);
   const avgNiftySwing = validSwing.length 
-    ? validSwing.reduce((sum, r) => sum + r.dailySwing!, 0) / validSwing.length
+    ? validSwing.reduce((sum, r) => sum + (r.dailySwing as number), 0) / validSwing.length
     : 0;
 
-  const absROIs = rows.map(r => Math.abs(r.roiOnDeposit));
-  const avgAbsDailyROI = absROIs.reduce((sum, val) => sum + val, 0) / rows.length;
+  // Avg Portfolio Swing: AVERAGE(col C / roiOnDeposit) across all valid rows
+  const avgAbsDailyROI = rows.reduce((sum, r) => sum + r.roiOnDeposit, 0) / rows.length;
 
   const leverageRatio = avgNiftySwing > 0 ? avgAbsDailyROI / avgNiftySwing : 0;
 
@@ -123,16 +124,13 @@ export function computeNetAssetMetrics(rows: PortfolioRow[]): PortfolioMetrics |
   const lossDays = rows.length - winDays;
   const winRatio = (winDays / rows.length) * 100;
 
-  // Avg Portfolio Swing: AVERAGE(col G) across valid rows
-  const validSwingRows = rows.filter(r => r.dailySwing !== null);
-  const avgAbsDailyROI = validSwingRows.length
-    ? validSwingRows.reduce((sum, r) => sum + r.dailySwing!, 0) / validSwingRows.length
-    : 0;
+  // Avg Portfolio Swing: AVERAGE(col D / dayROI) across all valid rows
+  const avgAbsDailyROI = rows.reduce((sum, r) => sum + r.roiOnDeposit, 0) / rows.length;
 
-  // Avg Nifty Daily Swing: AVERAGE(ABS(col E)) across valid rows
-  const validNiftyRows = rows.filter(r => r.niftyDailyChange !== null);
-  const avgNiftySwing = validNiftyRows.length
-    ? validNiftyRows.reduce((sum, r) => sum + Math.abs(r.niftyDailyChange!), 0) / validNiftyRows.length
+  // Avg Nifty Daily Swing: AVERAGE(col G / dailySwing) across rows where dailySwing is not null
+  const validSwingRows = rows.filter(r => r.dailySwing !== null);
+  const avgNiftySwing = validSwingRows.length
+    ? validSwingRows.reduce((sum, r) => sum + (r.dailySwing as number), 0) / validSwingRows.length
     : 0;
 
   const leverageRatio = avgNiftySwing > 0 ? avgAbsDailyROI / avgNiftySwing : 0;
@@ -203,7 +201,7 @@ export function computeNetAssetMetrics(rows: PortfolioRow[]): PortfolioMetrics |
     avgDailyROI: rows.reduce((sum, r) => sum + r.roiOnDeposit, 0) / rows.length,
     avgAbsDailyROI, // avg portfolio swing
     avgNiftySwing,  // avg nifty daily swing
-    validNiftyDays: rows.filter(r => r.niftyDailyChange !== null).length,
+    validNiftyDays: rows.filter(r => r.dailySwing !== null).length,
     leverageRatio,
     bestDay,
     worstDay,

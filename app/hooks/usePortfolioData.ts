@@ -48,6 +48,9 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       if (json.data && json.data.length > 0) {
         const computed = computeMetrics(json.data);
+        if (computed) {
+          computed.annualizedForecast = json.annualizedForecast3x ?? null;
+        }
         setMetrics(computed);
       } else {
         setMetrics(null);
@@ -55,6 +58,9 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       if (json.netAssetData && json.netAssetData.length > 0) {
         const computedNet = computeNetAssetMetrics(json.netAssetData);
+        if (computedNet) {
+          computedNet.annualizedForecast = json.annualizedForecastNetAsset ?? null;
+        }
         setNetAssetMetrics(computedNet);
       } else {
         setNetAssetMetrics(null);

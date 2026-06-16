@@ -34,6 +34,10 @@
     display: none !important;
   }
 
+  .sticky-section-nav {
+    display: none !important;
+  }
+
   /* ── Body and page setup ── */
   html, body {
     width: 210mm;
@@ -104,7 +108,7 @@
   .kpi-row,
   [data-kpi-row] {
     display: grid !important;
-    grid-template-columns: repeat(5, 1fr) !important;
+    grid-template-columns: repeat(6, 1fr) !important;
     gap: 6pt !important;
     break-inside: avoid !important;
     break-after: avoid !important;
@@ -165,6 +169,18 @@
   }
 
   /* Override chart heights specifically in print */
+  main .performance-chart {
+    height: 165px !important;
+  }
+  main .daily-chart {
+    height: 135px !important;
+  }
+  main .distribution-chart {
+    height: 180px !important;
+  }
+  main .swing-chart {
+    height: 165px !important;
+  }
   main .h-\[280px\] {
     height: 165px !important;
   }
@@ -251,6 +267,8 @@
   }
 
   /* ── Font sizes: slightly smaller for A4 ── */
+  .kpi-row .kpi-card-value,
+  [data-stat-row] .stat-card-value,
   .kpi-row .text-\[28px\],
   [data-stat-row] .text-\[28px\],
   .kpi-value {

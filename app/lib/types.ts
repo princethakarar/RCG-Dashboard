@@ -39,6 +39,7 @@ export interface PortfolioMetrics {
   mayCounts: number;
   junCounts: number;
   monthlyBreakdown?: { month: string; count: number }[];
+  annualizedForecast?: number | null;
 }
 
 export interface LoadedFile {

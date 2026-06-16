@@ -1,0 +1,13 @@
+$r = Invoke-RestMethod -Uri 'http://localhost:3002/api/portfolio-data' -TimeoutSec 60
+Write-Host "annualizedForecast3x: $($r.annualizedForecast3x)"
+Write-Host "annualizedForecastNetAsset: $($r.annualizedForecastNetAsset)"
+Write-Host "--- Debug 3x ---"
+Write-Host "  ColC (Running P&L): $($r._forecastDebug.'3x'.colC)"
+Write-Host "  ColP (Avg Deposit): $($r._forecastDebug.'3x'.colP)"
+Write-Host "  Calendar Days: $($r._forecastDebug.'3x'.calendarDays)"
+Write-Host "  Result: $($r._forecastDebug.'3x'.result)"
+Write-Host "--- Debug Net Asset ---"
+Write-Host "  ColC (Running P&L): $($r._forecastDebug.netAsset.colC)"
+Write-Host "  ColQ (Avg Deposit): $($r._forecastDebug.netAsset.colQ)"
+Write-Host "  Calendar Days: $($r._forecastDebug.netAsset.calendarDays)"
+Write-Host "  Result: $($r._forecastDebug.netAsset.result)"

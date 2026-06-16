@@ -116,6 +116,13 @@ export async function GET() {
     const allNetAssetRows: Map<string, PortfolioRow> = new Map();
     const loadedFiles: LoadedFile[] = [];
 
+    // Track annualized forecast raw values from the last valid row
+    let lastValid3xRunningPL: number | null = null;
+    let lastValid3xAvgDeposit: number | null = null;
+    let lastValidNetAssetRunningPL: number | null = null;
+    let lastValidNetAssetNetMargin: number | null = null;
+    let calendarDays = 0;
+
     console.log(`[portfolio-data] Found ${xlsxBlobs.length} xlsx blobs`);
     console.log(`[portfolio-data] Token present: ${!!process.env.BLOB_READ_WRITE_TOKEN}`);
 
@@ -212,7 +219,6 @@ export async function GET() {
           });
         }
 
-
         for (const item of fileRows) {
           allRows.set(item.dateKey, item.data);
           fileRowCount++;
@@ -286,6 +292,55 @@ export async function GET() {
         }
       }
 
+      // 3. Extract Annualized Forecast from Sheet 1 ("RCG INTERS")
+      // Both dashboards source from the same Sheet 1:
+      //   - 3x Dashboard:    ( (Col C [Running P&L] × 100 / Col P [Avg Deposit]) × 365 ) / Calendar Days
+      //   - Net Asset:       ( (Col C [Running P&L] × 100 / Col Q [Net Margin]) × 365 ) / Calendar Days
+      const sheet1Name = wb.SheetNames.find(s => {
+        const norm = s.trim().toUpperCase();
+        return norm === 'RCG INTERS' || norm === 'RCG INTERNS';
+      }) || wb.SheetNames[0]; // fallback to first sheet
+
+      if (sheet1Name) {
+        const ws1 = wb.Sheets[sheet1Name];
+        const rawSheet1 = XLSX.utils.sheet_to_json(ws1, { header: 1 }) as ExcelCellValue[][];
+
+        // Step 1: Get first trading date dynamically from Row 2 (index 1 in raw array)
+        let firstTradingDate: Date | null = null;
+        if (rawSheet1.length > 1 && rawSheet1[1] && rawSheet1[1][0]) {
+          const firstDateStr = parseExcelDate(rawSheet1[1][0]);
+          if (firstDateStr) {
+            firstTradingDate = new Date(firstDateStr);
+          }
+        }
+
+        // Single backward walk: find last row where BOTH Col C AND Col P are valid
+        // Both dashboards use this same row — 3x uses Col P, Net Asset uses Col Q
+        for (let i = rawSheet1.length - 1; i >= 1; i--) {
+          const row = rawSheet1[i];
+          if (!row) continue;
+          const colC = parseFloatValue(row[2]); // Running P&L
+          const colP = parseFloatValue(row[15]);
+          const colQ = parseFloatValue(row[16]);
+          if (colC !== 0 && isCellValidAndFilled(row[2]) && colP !== 0 && isCellValidAndFilled(row[15])) {
+            lastValid3xRunningPL = colC;
+            lastValid3xAvgDeposit = colP;
+            lastValidNetAssetRunningPL = colC;
+            lastValidNetAssetNetMargin = colQ; // Column Q = Avg Deposit (from same row)
+
+            // Step 2 & 3: Calendar days between first trading date and last valid date
+            const lastDateStr = parseExcelDate(row[0]);
+            if (firstTradingDate && lastDateStr) {
+              const lastDate = new Date(lastDateStr);
+              calendarDays = Math.round((lastDate.getTime() - firstTradingDate.getTime()) / (1000 * 60 * 60 * 24));
+            }
+
+            console.log(`[portfolio-data] Forecast from Sheet 1 "${sheet1Name}" row ${i}: ColC=${colC}, ColP=${colP}, ColQ=${colQ}, calendarDays=${calendarDays}`);
+            break;
+          }
+        }
+      }
+
       if (fileRowCount > 0) {
         loadedFiles.push({
           name: fileName,
@@ -300,9 +355,29 @@ export async function GET() {
     // Sort all rows by date ascending
     const sortedData = Array.from(allRows.values()).sort((a, b) => a.date.localeCompare(b.date));
     const sortedNetAssetData = Array.from(allNetAssetRows.values()).sort((a, b) => a.date.localeCompare(b.date));
+
+    // Compute Annualized Forecast values (divided by calendarDays)
+    // 3x: ((Col C [Running P&L] × 100 / Col P [Avg Deposit]) × 365) / calendarDays
+    const annualizedForecast3x = (lastValid3xRunningPL !== null && lastValid3xAvgDeposit !== null && lastValid3xAvgDeposit !== 0 && calendarDays > 0)
+      ? ((lastValid3xRunningPL * 100 / lastValid3xAvgDeposit) * 365) / calendarDays
+      : null;
+    // Net Asset: ((Col C [Running P&L] × 100 / Col Q [Avg Deposit]) × 365) / calendarDays
+    const annualizedForecastNetAsset = (lastValidNetAssetRunningPL !== null && lastValidNetAssetNetMargin !== null && lastValidNetAssetNetMargin !== 0 && calendarDays > 0)
+      ? ((lastValidNetAssetRunningPL * 100 / lastValidNetAssetNetMargin) * 365) / calendarDays
+      : null;
     
     return NextResponse.json(
-      { data: sortedData, netAssetData: sortedNetAssetData, files: loadedFiles },
+      {
+        data: sortedData,
+        netAssetData: sortedNetAssetData,
+        files: loadedFiles,
+        annualizedForecast3x,
+        annualizedForecastNetAsset,
+        _forecastDebug: {
+          '3x': { colC: lastValid3xRunningPL, colP: lastValid3xAvgDeposit, result: annualizedForecast3x, calendarDays },
+          netAsset: { colC: lastValidNetAssetRunningPL, colQ: lastValidNetAssetNetMargin, result: annualizedForecastNetAsset, calendarDays },
+        },
+      },
       {
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',

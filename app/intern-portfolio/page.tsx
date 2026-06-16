@@ -6,6 +6,7 @@ import { usePortfolio } from '../hooks/usePortfolioData';
 import { TopNav } from '../components/layout/TopNav';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Footer } from '../components/layout/Footer';
+import { StickySectionNav } from '../components/layout/StickySectionNav';
 import { KPICards } from '../components/portfolio/KPICards';
 import { RunningROIChart } from '../components/portfolio/RunningROIChart';
 import { DailyReturnChart } from '../components/portfolio/DailyReturnChart';
@@ -13,6 +14,7 @@ import { NetMTMChart } from '../components/portfolio/NetMTMChart';
 import { WinRatioCard } from '../components/portfolio/WinRatioCard';
 import { WorkingDaysCard } from '../components/portfolio/WorkingDaysCard';
 import { AvgNiftySwingCard, AvgPortfolioSwingCard } from '../components/portfolio/SwingCards';
+import { AnnualizedForecastCard } from '../components/portfolio/AnnualizedForecastCard';
 import { ReturnDistribution } from '../components/portfolio/ReturnDistribution';
 import { SwingComparisonChart } from '../components/portfolio/SwingComparisonChart';
 import { FolderOpen, ArrowRight, ShieldAlert, Loader } from 'lucide-react';
@@ -89,39 +91,40 @@ export default function InternPortfolioPage() {
           <PageHeader />
 
           {/* Main Content Area */}
-          <main className="flex-1 px-6 md:px-10 py-6 max-w-[1400px] w-full mx-auto space-y-6">
+          <main className="flex-1 dashboard-container py-4 md:py-6 w-full space-y-4 md:space-y-6 dashboard-with-sticky-nav">
             
-            {/* 1. KPI Cards Row (5 columns) */}
-            <div className="kpi-row" data-kpi-row>
+            {/* 1. KPI Cards Row */}
+            <div id="section-kpi" className="kpi-row scroll-mt-20" data-kpi-row>
               <KPICards metrics={metrics} />
             </div>
 
-            {/* 2. Cumulative Performance Chart (Full width) */}
-            <div data-chart-card data-chart-full>
+            {/* 2. Cumulative Performance Chart */}
+            <div id="section-performance" className="scroll-mt-20" data-chart-card data-chart-full>
               <RunningROIChart data={data} />
             </div>
 
-            {/* 3. Grouped Daily Returns + Net MTM Charts (50/50 split) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" data-chart-row>
+            {/* 3. Daily Returns + Net MTM Charts */}
+            <div id="section-daily" className="chart-pair-grid scroll-mt-20" data-chart-row>
               <div data-chart-card><DailyReturnChart data={data} /></div>
               <div data-chart-card><NetMTMChart data={data} metrics={metrics} /></div>
             </div>
 
-            {/* 4. Small Detailed Stat Cards Row (4 columns) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" data-stat-row>
+            {/* 4. Stat Cards Row */}
+            <div id="section-stats" className="stat-grid scroll-mt-20" data-stat-row>
               <WinRatioCard metrics={metrics} />
               <WorkingDaysCard metrics={metrics} />
               <AvgPortfolioSwingCard metrics={metrics} />
               <AvgNiftySwingCard metrics={metrics} />
+              <AnnualizedForecastCard metrics={metrics} isNetAsset={false} />
             </div>
 
-            {/* 5. Return Distribution (histogram & table) */}
-            <div data-distribution-section data-page-break-before>
+            {/* 5. Return Distribution */}
+            <div id="section-distribution" className="scroll-mt-20" data-distribution-section data-page-break-before>
               <ReturnDistribution metrics={metrics} />
             </div>
 
-            {/* 6. Swing Comparison Chart (Full width) */}
-            <div data-chart-card data-swing-chart>
+            {/* 6. Swing Comparison Chart */}
+            <div id="section-swing" className="scroll-mt-20" data-chart-card data-swing-chart>
               <SwingComparisonChart data={data} metrics={metrics} />
             </div>
 
@@ -138,6 +141,8 @@ export default function InternPortfolioPage() {
             </div>
 
           </main>
+
+          <StickySectionNav />
         </div>
       )}
 

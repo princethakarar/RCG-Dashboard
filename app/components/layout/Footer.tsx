@@ -6,32 +6,32 @@ import Image from 'next/image';
 export const Footer: React.FC = () => {
   return (
     <footer 
-      className="w-full py-12 px-6 md:px-10 font-sans mt-auto select-none border-t"
+      className="w-full py-8 md:py-12 px-4 md:px-10 font-sans mt-auto select-none border-t"
       style={{ 
         backgroundColor: '#0F0208', 
         borderColor: 'rgba(196, 30, 90, 0.25)',
       }}
     >
-      <div className="max-w-[1400px] mx-auto space-y-10">
+      <div className="max-w-[1400px] mx-auto space-y-8 md:space-y-10">
         
         {/* Top Header Row */}
         <div 
-          className="flex flex-col md:flex-row justify-between gap-8 pb-8 border-b"
+          className="footer-grid border-b pb-6 md:pb-8"
           style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}
         >
           {/* Logo & Brand */}
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 items-center md:items-start">
             <div className="flex items-center gap-3">
               <Image 
                 src="/logo.png" 
                 alt="Rising Capital Group" 
                 width={180}
                 height={65}
-                className="h-14 w-auto object-contain brightness-0 invert" 
+                className="h-12 md:h-14 w-auto object-contain brightness-0 invert" 
               />
             </div>
             <div 
-              className="text-[12px] font-semibold tracking-wider uppercase font-mono mt-3 space-y-1"
+              className="text-[11px] md:text-[12px] font-semibold tracking-wider uppercase font-mono mt-2 md:mt-3 space-y-1"
               style={{ color: '#C494A8' }}
             >
               <div>NSE F&O Partner</div>
@@ -40,21 +40,21 @@ export const Footer: React.FC = () => {
           </div>
           
           {/* Contact / Address Info */}
-          <div className="flex flex-col md:items-end text-left md:text-right gap-2">
+          <div className="flex flex-col md:items-end text-center md:text-right gap-2">
             <span 
-              className="font-extrabold uppercase tracking-widest text-[12px]"
+              className="font-extrabold uppercase tracking-widest text-[11px] md:text-[12px]"
               style={{ color: '#FFAEC9' }}
             >
               Contact Us
             </span>
             <p 
-              className="max-w-md text-xs leading-relaxed font-medium"
+              className="max-w-md text-[11px] md:text-xs leading-relaxed font-medium"
               style={{ color: '#EADCE3' }}
             >
               Unit no :- P03-02A&B, 3rd Floor, Tower A, WTC Gift City, Block No 51, Road 5E, Zone-5 Gift City, Gandhinagar, Gujarat
             </p>
             <div 
-              className="flex flex-col md:items-end gap-1.5 mt-2 font-mono text-[12px] font-semibold"
+              className="flex flex-col md:items-end gap-1.5 mt-2 font-mono text-[11px] md:text-[12px] font-semibold"
               style={{ color: '#C494A8' }}
             >
               <span>Phone: +91 9316597989</span>
@@ -64,15 +64,15 @@ export const Footer: React.FC = () => {
         </div>
 
         {/* Brand Slogan */}
-        <div className="py-2 text-center">
+        <div className="py-2 text-center px-2">
           <p 
-            className="text-[18px] font-light italic tracking-wide"
+            className="footer-quote font-light italic tracking-wide leading-relaxed"
             style={{ color: '#FFFFFF' }}
           >
             &ldquo;Don&apos;t follow us—follow the process. Don&apos;t believe opinions—believe the data. Anyone can trade, but only a few have the discipline to follow the process.&rdquo;
           </p>
           <p 
-            className="text-[11px] font-black mt-2 uppercase tracking-[0.25em]"
+            className="text-[10px] md:text-[11px] font-black mt-2 uppercase tracking-[0.25em]"
             style={{ color: '#FFAEC9' }}
           >
             — Rising Capital Group
@@ -81,7 +81,7 @@ export const Footer: React.FC = () => {
 
         {/* Bottom Row */}
         <div 
-          className="pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-[11px] border-t font-medium"
+          className="pt-4 md:pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-[10px] md:text-[11px] border-t font-medium text-center sm:text-left"
           style={{ 
             borderColor: 'rgba(255, 255, 255, 0.1)',
             color: '#9E8592'

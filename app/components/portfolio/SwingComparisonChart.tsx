@@ -7,6 +7,7 @@ import { PortfolioRow, PortfolioMetrics } from '../../lib/types';
 import { formatDate } from '../../lib/formatters';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
 import { Info } from 'lucide-react';
+import { useBreakpoint, getXAxisTickInterval, getChartTickFontSize } from '../../hooks/useBreakpoint';
 
 interface SwingComparisonChartProps {
   data: PortfolioRow[];
@@ -14,6 +15,9 @@ interface SwingComparisonChartProps {
 }
 
 export const SwingComparisonChart: React.FC<SwingComparisonChartProps> = ({ data, metrics }) => {
+  const breakpoint = useBreakpoint();
+  const tickFontSize = getChartTickFontSize(breakpoint);
+
   const chartData = data
     .filter(row => row.dailySwing !== null)
     .map(row => ({
@@ -23,11 +27,12 @@ export const SwingComparisonChart: React.FC<SwingComparisonChartProps> = ({ data
       dailySwing: row.dailySwing ?? 0,
     }));
 
+  const xInterval = getXAxisTickInterval(chartData.length, breakpoint);
+
   const maxVal = Math.max(
     ...chartData.map(d => Math.max(d.portfolioSwing, d.dailySwing))
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const portSwing = payload.find((p: any) => p.dataKey === 'portfolioSwing')?.value;
@@ -64,10 +69,10 @@ export const SwingComparisonChart: React.FC<SwingComparisonChartProps> = ({ data
 
   return (
     <Card className="border border-[#EDE0E6] shadow-none rounded-2xl select-none">
-      <CardHeader className="px-6 pt-6 pb-0">
+      <CardHeader className="card-responsive-header">
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-[15px] font-semibold text-[#1A0A10] tracking-tight flex items-center gap-1.5">
+            <CardTitle className="text-sm sm:text-[15px] font-semibold text-[#1A0A10] tracking-tight flex items-center gap-1.5 flex-wrap">
               <span>Portfolio Swing vs Nifty Swing — Daily Comparison</span>
               <div className="relative group inline-block no-print">
                 <Info size={14} className="text-[#9B8A92] hover:text-[#1A0A10] cursor-pointer" />
@@ -77,101 +82,105 @@ export const SwingComparisonChart: React.FC<SwingComparisonChartProps> = ({ data
                 </div>
               </div>
             </CardTitle>
-            <CardDescription className="text-[12px] text-[#9B8A92] mt-0.5">
+            <CardDescription className="text-[11px] sm:text-[12px] text-[#9B8A92] mt-0.5">
               Avg portfolio daily ROI vs Nifty daily swing % across trading days
             </CardDescription>
           </div>
         </div>
       </CardHeader>
       
-      <CardContent className="px-6 pb-6 pt-4">
-        {/* Recharts Chart */}
-        <div className="h-[280px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart
-              data={chartData}
-              margin={{ top: 20, right: 10, left: -15, bottom: 0 }}
-            >
-              <CartesianGrid stroke="#F0E8EC" strokeDasharray="2 4" vertical={false} />
-              
-              <XAxis 
-                dataKey="displayDate" 
-                tick={{ fill: '#9B8A92', fontSize: 11, fontFamily: 'Inter' }}
-                axisLine={{ stroke: '#EDE0E6' }}
-                tickLine={false}
-                dy={4}
-              />
-              
-              <YAxis 
-                domain={[0, Math.ceil(maxVal * 1.1)]}
-                tick={{ fill: '#9B8A92', fontSize: 11, fontFamily: 'Inter' }}
-                axisLine={false}
-                tickLine={false}
-                dx={-4}
-                width={48}
-                tickFormatter={(v) => `${v.toFixed(0)}%`}
-              />
+      <CardContent className="card-responsive-body">
+        <div className="chart-scroll-wrapper w-full">
+          <div className="chart-scroll-inner swing-chart">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart
+                data={chartData}
+                margin={{ top: 20, right: 10, left: 10, bottom: 0 }}
+              >
+                <CartesianGrid stroke="#F0E8EC" strokeDasharray="2 4" vertical={false} />
+                
+                <XAxis 
+                  dataKey="displayDate" 
+                  tick={{ fill: '#9B8A92', fontSize: tickFontSize, fontFamily: 'Inter' }}
+                  axisLine={{ stroke: '#EDE0E6' }}
+                  tickLine={false}
+                  dy={4}
+                  interval={xInterval}
+                />
+                
+                <YAxis 
+                  domain={[0, Math.ceil(maxVal * 1.1)]}
+                  tick={{ fill: '#9B8A92', fontSize: tickFontSize, fontFamily: 'Inter' }}
+                  axisLine={false}
+                  tickLine={false}
+                  dx={-4}
+                  width={55}
+                  tickFormatter={(v) => `${v.toFixed(0)}%`}
+                />
 
-              <Tooltip content={<CustomTooltip />} />
-              
-              <Legend 
-                verticalAlign="top" 
-                height={32} 
-                iconType="circle"
-                iconSize={8}
-                wrapperStyle={{ fontSize: 11, fontFamily: 'Inter', fontWeight: 600, color: '#9B8A92' }}
-              />
+                <Tooltip content={<CustomTooltip />} />
+                
+                <Legend 
+                  verticalAlign="top" 
+                  height={breakpoint === 'mobile' ? 48 : 32}
+                  iconType="circle"
+                  iconSize={8}
+                  wrapperStyle={{
+                    fontSize: tickFontSize,
+                    fontFamily: 'Inter',
+                    fontWeight: 600,
+                    color: '#9B8A92',
+                    lineHeight: '1.4',
+                  }}
+                />
 
-              {/* Horizontal Reference Lines for Averages (no inline labels) */}
-              <ReferenceLine 
-                y={metrics.avgAbsDailyROI} 
-                stroke="#8B0A3D" 
-                strokeWidth={1.5}
-                strokeDasharray="4 4" 
-              />
+                <ReferenceLine 
+                  y={metrics.avgAbsDailyROI} 
+                  stroke="#8B0A3D" 
+                  strokeWidth={1.5}
+                  strokeDasharray="4 4" 
+                />
 
-              <ReferenceLine 
-                y={metrics.avgNiftySwing} 
-                stroke="#2563EB" 
-                strokeWidth={1.5}
-                strokeDasharray="4 4" 
-              />
+                <ReferenceLine 
+                  y={metrics.avgNiftySwing} 
+                  stroke="#2563EB" 
+                  strokeWidth={1.5}
+                  strokeDasharray="4 4" 
+                />
 
-              {/* Portfolio Swing Bar */}
-              <Bar 
-                name="Portfolio Daily ROI"
-                dataKey="portfolioSwing" 
-                fill="#8B0A3D" 
-                opacity={0.85}
-                radius={[2, 2, 0, 0]}
-                barSize={12}
-              />
+                <Bar 
+                  name="Portfolio Daily ROI"
+                  dataKey="portfolioSwing" 
+                  fill="#8B0A3D" 
+                  opacity={0.85}
+                  radius={[2, 2, 0, 0]}
+                  barSize={12}
+                />
 
-              {/* Nifty Swing Line */}
-              <Line 
-                name="Nifty Daily Swing"
-                type="monotone" 
-                dataKey="dailySwing" 
-                stroke="#2563EB" 
-                strokeWidth={2} 
-                dot={{ r: 3, fill: '#2563EB', strokeWidth: 1 }}
-                activeDot={{ r: 5 }}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+                <Line 
+                  name="Nifty Daily Swing"
+                  type="monotone" 
+                  dataKey="dailySwing" 
+                  stroke="#2563EB" 
+                  strokeWidth={2} 
+                  dot={{ r: 3, fill: '#2563EB', strokeWidth: 1 }}
+                  activeDot={{ r: 5 }}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        {/* Average Summary Badges */}
-        <div className="flex items-center gap-6 mt-4 pt-3 border-t border-[#EDE0E6]/60">
+        <div className="swing-legend-row mt-4 pt-3 border-t border-[#EDE0E6]/60">
           <div className="flex items-center gap-2">
-            <span className="w-6 h-0.5 bg-[#8B0A3D] inline-block" style={{ borderTop: '2px dashed #8B0A3D' }} />
-            <span className="text-[12px] font-bold text-[#8B0A3D] font-sans">
+            <span className="w-6 h-0.5 inline-block" style={{ borderTop: '2px dashed #8B0A3D' }} />
+            <span className="swing-avg-label text-[#8B0A3D] font-sans">
               Avg Portfolio Swing: {metrics.avgAbsDailyROI.toFixed(2)}%
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-6 h-0.5 bg-[#2563EB] inline-block" style={{ borderTop: '2px dashed #2563EB' }} />
-            <span className="text-[12px] font-bold text-[#2563EB] font-sans">
+            <span className="w-6 h-0.5 inline-block" style={{ borderTop: '2px dashed #2563EB' }} />
+            <span className="swing-avg-label text-[#2563EB] font-sans">
               Avg Nifty Swing: {metrics.avgNiftySwing.toFixed(2)}%
             </span>
           </div>

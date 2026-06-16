@@ -6,8 +6,8 @@ import { PortfolioMetrics } from '../../lib/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../ui/table';
 import { Badge } from '../ui/badge';
-
 import { usePathname } from 'next/navigation';
+import { useBreakpoint, getChartTickFontSize } from '../../hooks/useBreakpoint';
 
 interface ReturnDistributionProps {
   metrics: PortfolioMetrics;
@@ -17,6 +17,8 @@ export const ReturnDistribution: React.FC<ReturnDistributionProps> = ({ metrics 
   const pathname = usePathname();
   const isNetAsset = pathname === '/net-asset';
   const { roiDistribution, totalDays } = metrics;
+  const breakpoint = useBreakpoint();
+  const tickFontSize = getChartTickFontSize(breakpoint);
 
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ value: number; payload: { label: string; status: string; statusColor?: string } }> }) => {
     if (active && payload && payload.length) {
@@ -42,91 +44,92 @@ export const ReturnDistribution: React.FC<ReturnDistributionProps> = ({ metrics 
 
   return (
     <Card className="border border-[#EDE0E6] shadow-none rounded-2xl select-none">
-      <CardHeader className="px-6 pt-6 pb-0">
+      <CardHeader className="card-responsive-header">
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-[15px] font-semibold text-[#1A0A10] tracking-tight">
+            <CardTitle className="text-sm sm:text-[15px] font-semibold text-[#1A0A10] tracking-tight">
               Return Distribution by Day
             </CardTitle>
-            <CardDescription className="text-[12px] text-[#9B8A92] mt-0.5">
+            <CardDescription className="text-[11px] sm:text-[12px] text-[#9B8A92] mt-0.5">
               Frequency of daily returns categorized into percentage brackets (optimized for {isNetAsset ? 'Net Asset' : '3x leverage'})
             </CardDescription>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="px-6 pb-6 pt-4">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <CardContent className="card-responsive-body">
+        <div className="distribution-grid">
           
-          {/* Left: Histogram Chart (7 cols) */}
-          <div className="lg:col-span-7 h-[320px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={roiDistribution}
-                margin={{ top: 20, right: 10, left: -25, bottom: 10 }}
-              >
-                <CartesianGrid stroke="#F0E8EC" strokeDasharray="2 4" vertical={false} />
-                
-                <XAxis 
-                  dataKey="label" 
-                  tick={{ fill: '#9B8A92', fontSize: 11, fontFamily: 'Inter' }}
-                  axisLine={{ stroke: '#EDE0E6' }}
-                  tickLine={false}
-                  angle={-30}
-                  textAnchor="end"
-                  height={50}
-                />
-                
-                <YAxis 
-                  tick={{ fill: '#9B8A92', fontSize: 11, fontFamily: 'Inter' }}
-                  axisLine={false}
-                  tickLine={false}
-                  allowDecimals={false}
-                  domain={[0, (dataMax) => Math.max(12, dataMax)]}
-                />
-
-                <Tooltip content={<CustomTooltip />} />
-
-                <ReferenceLine y={0} stroke="#EDE0E6" />
-
-                <Bar 
-                  dataKey="count" 
-                  radius={[2, 2, 0, 0]}
+          <div className="chart-scroll-wrapper">
+            <div className="chart-scroll-inner distribution-chart">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={roiDistribution}
+                  margin={{ top: 20, right: 10, left: 10, bottom: 10 }}
                 >
-                  {roiDistribution.map((entry, index) => (
-                    <Cell 
-                      key={`cell-dist-${index}`} 
-                      fill={entry.color || '#FCA5A5'} 
-                    />
-                  ))}
-                  <LabelList 
-                    dataKey="count" 
-                    position="top" 
-                    fill="#1A0A10" 
-                    fontSize={11} 
-                    fontWeight={700}
-                    fontFamily="Inter"
+                  <CartesianGrid stroke="#F0E8EC" strokeDasharray="2 4" vertical={false} />
+                  
+                  <XAxis 
+                    dataKey="label" 
+                    tick={{ fill: '#9B8A92', fontSize: tickFontSize, fontFamily: 'Inter' }}
+                    axisLine={{ stroke: '#EDE0E6' }}
+                    tickLine={false}
+                    angle={breakpoint === 'mobile' ? -45 : -30}
+                    textAnchor="end"
+                    height={breakpoint === 'mobile' ? 60 : 50}
                   />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                  
+                  <YAxis 
+                    tick={{ fill: '#9B8A92', fontSize: tickFontSize, fontFamily: 'Inter' }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={40}
+                    allowDecimals={false}
+                    domain={[0, (dataMax) => Math.max(12, dataMax)]}
+                  />
+
+                  <Tooltip content={<CustomTooltip />} />
+
+                  <ReferenceLine y={0} stroke="#EDE0E6" />
+
+                  <Bar 
+                    dataKey="count" 
+                    radius={[2, 2, 0, 0]}
+                  >
+                    {roiDistribution.map((entry, index) => (
+                      <Cell 
+                        key={`cell-dist-${index}`} 
+                        fill={entry.color || '#FCA5A5'} 
+                      />
+                    ))}
+                    <LabelList 
+                      dataKey="count" 
+                      position="top" 
+                      fill="#1A0A10" 
+                      fontSize={tickFontSize} 
+                      fontWeight={700}
+                      fontFamily="Inter"
+                    />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          {/* Right: Summary Table (5 cols) */}
-          <div className="lg:col-span-5 border border-[#EDE0E6] rounded-xl overflow-hidden bg-white shadow-none">
+          <div className="border border-[#EDE0E6] rounded-xl overflow-hidden bg-white shadow-none w-full overflow-x-auto">
             <div className="bg-[#F8F4F6] border-b border-[#EDE0E6] px-4 py-3">
-              <span className="text-[11px] font-bold text-[#1A0A10] uppercase tracking-wider font-sans">
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#1A0A10] uppercase tracking-wider font-sans">
                 Return Classification
               </span>
             </div>
             
-            <Table>
+            <Table className="distribution-table">
               <TableHeader>
                 <TableRow className="border-b border-[#EDE0E6] bg-[#F8F4F6]/50">
-                  <TableHead className="text-[10px] uppercase tracking-wide text-[#9B8A92] font-bold py-2.5">Range</TableHead>
-                  <TableHead className="text-right text-[10px] uppercase tracking-wide text-[#9B8A92] font-bold py-2.5">Days</TableHead>
-                  <TableHead className="text-right text-[10px] uppercase tracking-wide text-[#9B8A92] font-bold py-2.5">% Share</TableHead>
-                  <TableHead className="text-right text-[10px] uppercase tracking-wide text-[#9B8A92] font-bold py-2.5">Status</TableHead>
+                  <TableHead className="text-[9px] sm:text-[10px] uppercase tracking-wide text-[#9B8A92] font-bold py-2">Range</TableHead>
+                  <TableHead className="text-right text-[9px] sm:text-[10px] uppercase tracking-wide text-[#9B8A92] font-bold py-2">Days</TableHead>
+                  <TableHead className="text-right text-[9px] sm:text-[10px] uppercase tracking-wide text-[#9B8A92] font-bold py-2">% Share</TableHead>
+                  <TableHead className="text-right text-[9px] sm:text-[10px] uppercase tracking-wide text-[#9B8A92] font-bold py-2">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className="divide-y divide-[#EDE0E6]/60">
@@ -134,11 +137,15 @@ export const ReturnDistribution: React.FC<ReturnDistributionProps> = ({ metrics 
                   const share = ((row.count / totalDays) * 100).toFixed(1) + "%";
                   return (
                     <TableRow key={row.label} className="border-b border-[#F8F4F6] hover:bg-[#F8F4F6]/20 transition-colors">
-                      <TableCell className="font-semibold text-xs text-[#1A0A10] tabular-nums py-2.5">{row.label}</TableCell>
-                      <TableCell className="text-right font-bold text-xs text-[#1A0A10] tabular-nums py-2.5">{row.count}</TableCell>
-                      <TableCell className="text-right text-xs text-[#9B8A92] tabular-nums py-2.5">{share}</TableCell>
-                      <TableCell className="text-right py-2.5">
-                        <Badge variant="outline" style={{ color: row.statusColor, borderColor: row.statusColor + '40' }} className="font-bold">
+                      <TableCell className="font-semibold text-[#1A0A10] tabular-nums py-2">{row.label}</TableCell>
+                      <TableCell className="text-right font-bold text-[#1A0A10] tabular-nums py-2">{row.count}</TableCell>
+                      <TableCell className="text-right text-[#9B8A92] tabular-nums py-2">{share}</TableCell>
+                      <TableCell className="text-right py-2">
+                        <Badge
+                          variant="outline"
+                          style={{ color: row.statusColor, borderColor: row.statusColor + '40' }}
+                          className="distribution-badge font-bold"
+                        >
                           {row.status}
                         </Badge>
                       </TableCell>
@@ -146,10 +153,10 @@ export const ReturnDistribution: React.FC<ReturnDistributionProps> = ({ metrics 
                   );
                 })}
                 <TableRow className="bg-[#F8F4F6]/40 font-bold border-t border-[#EDE0E6]">
-                  <TableCell className="text-[#1A0A10] py-2.5">TOTAL</TableCell>
-                  <TableCell className="text-right font-extrabold text-[#1A0A10] py-2.5">{totalDays}</TableCell>
-                  <TableCell className="text-right text-[#1A0A10] py-2.5">100.0%</TableCell>
-                  <TableCell className="py-2.5" />
+                  <TableCell className="text-[#1A0A10] py-2">TOTAL</TableCell>
+                  <TableCell className="text-right font-extrabold text-[#1A0A10] py-2">{totalDays}</TableCell>
+                  <TableCell className="text-right text-[#1A0A10] py-2">100.0%</TableCell>
+                  <TableCell className="py-2" />
                 </TableRow>
               </TableBody>
             </Table>

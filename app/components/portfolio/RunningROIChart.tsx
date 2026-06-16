@@ -7,8 +7,8 @@ import { PortfolioRow } from '../../lib/types';
 import { formatDate } from '../../lib/formatters';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
 import { Separator } from '../ui/separator';
-
 import { usePathname } from 'next/navigation';
+import { useBreakpoint, getXAxisTickInterval, getChartTickFontSize } from '../../hooks/useBreakpoint';
 
 interface RunningROIChartProps {
   data: PortfolioRow[];
@@ -17,14 +17,15 @@ interface RunningROIChartProps {
 export const RunningROIChart: React.FC<RunningROIChartProps> = ({ data }) => {
   const pathname = usePathname();
   const isNetAsset = pathname === '/net-asset';
+  const breakpoint = useBreakpoint();
+  const tickFontSize = getChartTickFontSize(breakpoint);
+  const xInterval = getXAxisTickInterval(data.length, breakpoint);
 
-  // Pre-format dates for the chart X-axis
   const chartData = data.map(row => ({
     ...row,
     displayDate: formatDate(row.date),
   }));
 
-  // Find last non-null values
   const lastPortfolioRow = [...data].reverse().find(r => r.runningROI !== null && !isNaN(r.runningROI));
   const lastNiftyRow = [...data].reverse().find(r => r.niftyContinue !== null && !isNaN(r.niftyContinue));
 
@@ -36,7 +37,6 @@ export const RunningROIChart: React.FC<RunningROIChartProps> = ({ data }) => {
     ? `${formatDate(data[0].date)} – ${formatDate(data[data.length - 1].date)} 2026`
     : "";
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const portVal = payload.find((p: any) => p.dataKey === 'runningROI')?.value;
@@ -75,92 +75,89 @@ export const RunningROIChart: React.FC<RunningROIChartProps> = ({ data }) => {
 
   return (
     <Card className="border border-[#EDE0E6] shadow-none rounded-2xl overflow-hidden select-none">
-      <CardHeader className="px-6 pt-6 pb-0">
+      <CardHeader className="card-responsive-header">
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-[15px] font-semibold text-[#1A0A10] tracking-tight">
+            <CardTitle className="text-sm sm:text-[15px] font-semibold text-[#1A0A10] tracking-tight">
               Cumulative Performance — Portfolio vs Nifty
             </CardTitle>
-            <CardDescription className="text-[12px] text-[#9B8A92] mt-0.5">
+            <CardDescription className="text-[11px] sm:text-[12px] text-[#9B8A92] mt-0.5">
               Running ROI on {isNetAsset ? 'Net Asset' : 'Deposit'} vs Nifty Net Continue — both as cumulative %
             </CardDescription>
           </div>
         </div>
       </CardHeader>
       
-      <CardContent className="px-6 pb-6 pt-4">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Chart takes left 75% (3 cols) */}
-          <div className="lg:col-span-3 h-[280px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart
-                data={chartData}
-                margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
-              >
-                <CartesianGrid stroke="#F0E8EC" strokeDasharray="2 4" vertical={false} />
-                
-                <XAxis 
-                  dataKey="displayDate" 
-                  tick={{ fill: '#9B8A92', fontSize: 11, fontFamily: 'Inter' }}
-                  axisLine={{ stroke: '#EDE0E6' }}
-                  tickLine={false}
-                  dy={4}
-                />
-                
-                <YAxis 
-                  tick={{ fill: '#9B8A92', fontSize: 11, fontFamily: 'Inter' }}
-                  axisLine={false}
-                  tickLine={false}
-                  dx={-4}
-                  width={48}
-                  tickFormatter={(v) => `${v}%`}
-                />
+      <CardContent className="card-responsive-body">
+        <div className="performance-grid">
+          <div className="chart-scroll-wrapper">
+            <div className="chart-scroll-inner performance-chart">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={chartData}
+                  margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+                >
+                  <CartesianGrid stroke="#F0E8EC" strokeDasharray="2 4" vertical={false} />
+                  
+                  <XAxis 
+                    dataKey="displayDate" 
+                    tick={{ fill: '#9B8A92', fontSize: tickFontSize, fontFamily: 'Inter' }}
+                    axisLine={{ stroke: '#EDE0E6' }}
+                    tickLine={false}
+                    dy={4}
+                    interval={xInterval}
+                  />
+                  
+                  <YAxis 
+                    tick={{ fill: '#9B8A92', fontSize: tickFontSize, fontFamily: 'Inter' }}
+                    axisLine={false}
+                    tickLine={false}
+                    dx={-4}
+                    width={55}
+                    tickFormatter={(v) => `${v}%`}
+                  />
 
-                <Tooltip content={<CustomTooltip />} />
-                
-                <Legend 
-                  verticalAlign="top" 
-                  height={32} 
-                  iconType="circle"
-                  iconSize={8}
-                  wrapperStyle={{ fontSize: 11, fontFamily: 'Inter', fontWeight: 600, color: '#9B8A92' }}
-                />
+                  <Tooltip content={<CustomTooltip />} />
+                  
+                  <Legend 
+                    verticalAlign="top" 
+                    height={32} 
+                    iconType="circle"
+                    iconSize={8}
+                    wrapperStyle={{ fontSize: tickFontSize, fontFamily: 'Inter', fontWeight: 600, color: '#9B8A92' }}
+                  />
 
-                {/* Zero reference line */}
-                <ReferenceLine y={0} stroke="#EDE0E6" strokeDasharray="3 6" strokeWidth={1} />
+                  <ReferenceLine y={0} stroke="#EDE0E6" strokeDasharray="3 6" strokeWidth={1} />
 
-                {/* Portfolio Line */}
-                <Line 
-                  name={isNetAsset ? 'Portfolio Net Asset (Running ROI)' : 'Portfolio 3x (Running ROI)'}
-                  type="monotone" 
-                  dataKey="runningROI" 
-                  stroke="#8B0A3D" 
-                  strokeWidth={2.5} 
-                  dot={{ r: 3, fill: '#8B0A3D', strokeWidth: 1 }}
-                  activeDot={{ r: 5 }}
-                />
+                  <Line 
+                    name={isNetAsset ? 'Portfolio Net Asset (Running ROI)' : 'Portfolio 3x (Running ROI)'}
+                    type="monotone" 
+                    dataKey="runningROI" 
+                    stroke="#8B0A3D" 
+                    strokeWidth={2.5} 
+                    dot={{ r: 3, fill: '#8B0A3D', strokeWidth: 1 }}
+                    activeDot={{ r: 5 }}
+                  />
 
-                {/* Nifty Line - Solid */}
-                <Line 
-                  name="Nifty (Cumulative %)"
-                  type="monotone" 
-                  dataKey="niftyContinue" 
-                  stroke="#2563EB" 
-                  strokeWidth={1.5}
-                  strokeDasharray="0"
-                  connectNulls={false}
-                  dot={{ r: 2, fill: '#2563EB', strokeWidth: 1 }}
-                  activeDot={{ r: 4 }}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
+                  <Line 
+                    name="Nifty (Cumulative %)"
+                    type="monotone" 
+                    dataKey="niftyContinue" 
+                    stroke="#2563EB" 
+                    strokeWidth={1.5}
+                    strokeDasharray="0"
+                    connectNulls={false}
+                    dot={{ r: 2, fill: '#2563EB', strokeWidth: 1 }}
+                    activeDot={{ r: 4 }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
           </div>
           
-          {/* Summary panel takes right 25% (1 col) */}
           <div 
             data-summary-panel
-            className="lg:col-span-1 border-t lg:border-t-0 lg:border-l border-[#EDE0E6] pt-6 lg:pt-0 lg:pl-6 flex flex-col justify-center min-w-[160px] w-[160px] flex-shrink-0 overflow-visible"
-            style={{ minWidth: '160px' }}
+            className="border-t md:border-t-0 md:border-l border-[#EDE0E6] pt-4 md:pt-0 md:pl-5 flex flex-col justify-center w-full overflow-visible"
           >
             <div className="space-y-4 font-sans">
               <div>
@@ -175,20 +172,20 @@ export const RunningROIChart: React.FC<RunningROIChartProps> = ({ data }) => {
               <Separator />
               
               <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-medium text-[#6B4A58] whitespace-nowrap">
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-[11px] font-medium text-[#6B4A58]">
                     {isNetAsset ? 'Portfolio Net Asset' : 'Portfolio 3x'}
                   </span>
-                  <span className={`text-[15px] font-extrabold tabular-nums ${portfolioLastVal >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+                  <span className={`summary-panel-value ${portfolioLastVal >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
                     {portfolioLastVal >= 0 ? '+' : ''}{portfolioLastVal.toFixed(2)}%
                   </span>
                 </div>
                 
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-medium text-[#6B4A58] whitespace-nowrap">
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-[11px] font-medium text-[#6B4A58]">
                     Nifty Index
                   </span>
-                  <span className={`text-[15px] font-extrabold tabular-nums ${niftyLastVal >= 0 ? 'text-[#2563EB]' : 'text-[#DC2626]'}`}>
+                  <span className={`summary-panel-value ${niftyLastVal >= 0 ? 'text-[#2563EB]' : 'text-[#DC2626]'}`}>
                     {niftyLastVal >= 0 ? '+' : ''}{niftyLastVal.toFixed(2)}%
                   </span>
                 </div>
@@ -196,11 +193,11 @@ export const RunningROIChart: React.FC<RunningROIChartProps> = ({ data }) => {
               
               <Separator />
               
-              <div className="flex justify-between items-center">
-                <span className="text-[11px] font-bold text-[#1A0A10] uppercase tracking-wide whitespace-nowrap">
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-[11px] font-bold text-[#1A0A10] uppercase tracking-wide">
                   Outperformance
                 </span>
-                <span className={`text-[15px] font-extrabold tabular-nums ${outperformance >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+                <span className={`summary-panel-value ${outperformance >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
                   {outperformance >= 0 ? '+' : ''}{outperformance.toFixed(2)}%
                 </span>
               </div>

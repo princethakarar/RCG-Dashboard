@@ -159,6 +159,17 @@
     break-inside: avoid !important;
   }
 
+  /* ── Periodic Returns cards row ── */
+  .periodic-grid,
+  [data-periodic-row] {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 6pt !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+
   /* ── Return Distribution section ── */
   [data-distribution-section] {
     display: grid !important;

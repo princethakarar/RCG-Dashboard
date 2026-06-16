@@ -830,3 +830,52 @@ img, chart, canvas, svg {
   line-height: 1.6 !important;
   padding: 0 16px !important;
 }
+
+/* Periodic Returns grid: custom responsive grid for 5 cards */
+.periodic-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+/* Mobile (<600px): repeat(2, 1fr) + 1 full width */
+@media (max-width: 599px) {
+  .periodic-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+  .periodic-grid > *:nth-child(1),
+  .periodic-grid > *:nth-child(2),
+  .periodic-grid > *:nth-child(3),
+  .periodic-grid > *:nth-child(4) {
+    grid-column: span 2 !important;
+  }
+  .periodic-grid > *:nth-child(5) {
+    grid-column: span 4 !important;
+  }
+}
+
+/* Tablet (600–899px): repeat(3, 1fr) + repeat(2, 1fr) */
+@media (min-width: 600px) and (max-width: 899px) {
+  .periodic-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+  }
+  .periodic-grid > *:nth-child(1),
+  .periodic-grid > *:nth-child(2),
+  .periodic-grid > *:nth-child(3) {
+    grid-column: span 2 !important;
+  }
+  .periodic-grid > *:nth-child(4),
+  .periodic-grid > *:nth-child(5) {
+    grid-column: span 3 !important;
+  }
+}
+
+/* Desktop (900px+) */
+@media (min-width: 900px) {
+  .periodic-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 24px !important;
+  }
+}
+

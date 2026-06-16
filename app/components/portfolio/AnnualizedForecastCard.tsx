@@ -53,9 +53,9 @@ export const AnnualizedForecastCard: React.FC<AnnualizedForecastCardProps> = ({ 
 
         <div className="mt-6 pt-3 border-t border-[#EDE0E6]/60 text-[11px] font-semibold text-[#9B8A92] sub-label">
           {isNetAsset ? (
-            <div>Avg Deposit Denominator: <span className="text-[#1A0A10] font-bold">Net Margin (Col Q)</span></div>
+            <div>Avg Deposit Denominator: <span className="text-[#1A0A10] font-bold">Net Margin</span></div>
           ) : (
-            <div>Avg Deposit Denominator: <span className="text-[#8B0A3D] font-bold">Avg Deposit (Col P)</span></div>
+            <div>Avg Deposit Denominator: <span className="text-[#8B0A3D] font-bold">Avg Deposit</span></div>
           )}
         </div>
       </CardContent>

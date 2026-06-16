@@ -15,6 +15,7 @@ import { WinRatioCard } from '../components/portfolio/WinRatioCard';
 import { WorkingDaysCard } from '../components/portfolio/WorkingDaysCard';
 import { AvgNiftySwingCard, AvgPortfolioSwingCard } from '../components/portfolio/SwingCards';
 import { AnnualizedForecastCard } from '../components/portfolio/AnnualizedForecastCard';
+import { PeriodicReturnsCards } from '../components/portfolio/PeriodicReturnsCards';
 import { ReturnDistribution } from '../components/portfolio/ReturnDistribution';
 import { SwingComparisonChart } from '../components/portfolio/SwingComparisonChart';
 import { FolderOpen, ArrowRight, ShieldAlert, Loader } from 'lucide-react';
@@ -110,12 +111,21 @@ export default function InternPortfolioPage() {
             </div>
 
             {/* 4. Stat Cards Row */}
-            <div id="section-stats" className="stat-grid scroll-mt-20" data-stat-row>
-              <WinRatioCard metrics={metrics} />
-              <WorkingDaysCard metrics={metrics} />
-              <AvgPortfolioSwingCard metrics={metrics} />
-              <AvgNiftySwingCard metrics={metrics} />
-              <AnnualizedForecastCard metrics={metrics} isNetAsset={false} />
+            <div id="section-stats" className="scroll-mt-20 space-y-6">
+              <div className="stat-grid" data-stat-row>
+                <WinRatioCard metrics={metrics} />
+                <WorkingDaysCard metrics={metrics} />
+                <AvgPortfolioSwingCard metrics={metrics} />
+                <AvgNiftySwingCard metrics={metrics} />
+                <AnnualizedForecastCard metrics={metrics} isNetAsset={false} />
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="text-[10px] sm:text-[11px] font-bold text-[#9B8A92] uppercase tracking-wider font-sans">
+                  PERIODIC RETURNS
+                </h3>
+                <PeriodicReturnsCards data={data} />
+              </div>
             </div>
 
             {/* 5. Return Distribution */}

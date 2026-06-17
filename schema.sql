@@ -53,3 +53,14 @@ ALTER TABLE trading_data ENABLE ROW LEVEL SECURITY;
 ALTER TABLE portfolio_3x ENABLE ROW LEVEL SECURITY;
 ALTER TABLE portfolio_net_asset ENABLE ROW LEVEL SECURITY;
 
+CREATE TABLE IF NOT EXISTS site_settings (
+  id              SERIAL PRIMARY KEY,
+  password_hash   TEXT NOT NULL,
+  password_version INTEGER NOT NULL DEFAULT 1,
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
+
+

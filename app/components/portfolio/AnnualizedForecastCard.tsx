@@ -3,7 +3,7 @@
 import React from 'react';
 import { PortfolioMetrics } from '../../lib/types';
 import { Card, CardContent } from '../ui/card';
-import { Info, Crosshair } from 'lucide-react';
+import { Crosshair } from 'lucide-react';
 
 interface AnnualizedForecastCardProps {
   metrics: PortfolioMetrics;
@@ -31,13 +31,6 @@ export const AnnualizedForecastCard: React.FC<AnnualizedForecastCardProps> = ({ 
               ANNUALIZED FORECAST
             </span>
             <div className="flex items-center gap-1.5 shrink-0">
-              <div className="relative group inline-block">
-                <Info size={12} className="text-[#9B8A92] hover:text-[#1A0A10] cursor-pointer" />
-                <div className="absolute bottom-full right-0 mb-2 w-60 p-2.5 bg-[#1A0A10] text-white text-[10px] font-medium rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-xl z-50 leading-normal text-center">
-                  Projected annualized return based on the last trading day&apos;s Running P&amp;L relative to {isNetAsset ? 'net margin' : 'average deposit'} and calendar days elapsed.
-                  <div className="absolute top-full right-2 border-4 border-transparent border-t-[#1A0A10]" />
-                </div>
-              </div>
               {displayVal != null && displayVal >= 0 ? (
                 <Crosshair className="w-4 h-4 text-[#16A34A]" />
               ) : (

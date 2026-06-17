@@ -5,7 +5,6 @@ import React from 'react';
 import { PortfolioMetrics } from '../../lib/types';
 import { Card, CardContent } from '../ui/card';
 import { Progress } from '../ui/progress';
-import { Info } from 'lucide-react';
 
 interface WinRatioCardProps {
   metrics: PortfolioMetrics;
@@ -24,13 +23,6 @@ export const WinRatioCard: React.FC<WinRatioCardProps> = ({ metrics }) => {
             </span>
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] sm:text-[10px] font-bold text-[#9B8A92] uppercase tracking-wider">TARGET</span>
-              <div className="relative group inline-block">
-                <Info size={12} className="text-[#9B8A92] hover:text-[#1A0A10] cursor-pointer" />
-                <div className="absolute bottom-full right-0 mb-2 w-56 p-2 bg-[#1A0A10] text-white text-[10px] font-medium rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-xl z-50 text-center">
-                  Target is calculated based on profitable days.
-                  <div className="absolute top-full right-2 border-4 border-transparent border-t-[#1A0A10]" />
-                </div>
-              </div>
             </div>
           </div>
 

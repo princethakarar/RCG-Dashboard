@@ -71,7 +71,13 @@ export const NavUploadZone: React.FC<NavUploadZoneProps> = ({ onUploadSuccess, f
         body: formData,
       });
 
-      const json = await res.ok ? await res.json() : null;
+      let json;
+      try {
+        json = await res.json();
+      } catch {
+        json = null;
+      }
+
       if (res.ok && json?.success) {
         setSuccessMsg(`RCG Alpha NAV data updated successfully: ${file.name}`);
         // Let user see success message, then reload dashboard context
@@ -103,7 +109,13 @@ export const NavUploadZone: React.FC<NavUploadZoneProps> = ({ onUploadSuccess, f
         method: 'DELETE',
       });
 
-      const json = await res.ok ? await res.json() : null;
+      let json;
+      try {
+        json = await res.json();
+      } catch {
+        json = null;
+      }
+
       if (res.ok && json?.success) {
         setSuccessMsg(`Successfully removed data from "${fileName}"`);
         onUploadSuccess();

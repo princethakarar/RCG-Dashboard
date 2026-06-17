@@ -50,6 +50,17 @@ interface ParsedNavData {
   forecast: number;
 }
 
+function isGrossPlCutoff(val: unknown, cell?: XLSX.CellObject): boolean {
+  if (val === null || val === undefined) return false;
+  const str = String(val).trim();
+  if (str === '-' || str === '–' || str === '—') return true;
+  if (cell && cell.w) {
+    const formatted = cell.w.trim();
+    if (formatted === '-' || formatted === '–' || formatted === '—') return true;
+  }
+  return false;
+}
+
 function parseSheet(ws: XLSX.WorkSheet): ParsedNavData {
   const rawData = XLSX.utils.sheet_to_json(ws, { header: 1 }) as ExcelCellValue[][];
   const series: { date: string; final_nav: number }[] = [];
@@ -58,6 +69,16 @@ function parseSheet(ws: XLSX.WorkSheet): ParsedNavData {
   for (let i = 2; i < rawData.length; i++) {
     const row = rawData[i];
     if (!row || row.length === 0) continue;
+
+    // Cutoff check based on Column I (GROSS P&L F&O at index 8)
+    const grossPl = row[8];
+    const cellRef = XLSX.utils.encode_cell({ r: i, c: 8 });
+    const cell = ws[cellRef];
+    console.log(`[parseSheet] Row ${i+1}: date=${row[0]}, grossPl=${grossPl} (type: ${typeof grossPl}), cell.v=${cell?.v}, cell.w=${cell?.w}, cell.t=${cell?.t}`);
+
+    if (i > 2 && isGrossPlCutoff(grossPl, cell)) {
+      break; // Stop processing immediately on literal "-"
+    }
 
     const dateStr = parseExcelDate(row[0]);
     if (!dateStr) continue;
@@ -113,32 +134,55 @@ export async function POST(req: NextRequest) {
     const data3x = parseSheet(wb.Sheets[rip3xSheetName]);
     const dataNet = parseSheet(wb.Sheets[ripNetSheetName]);
 
-    if (data3x.series.length === 0 || dataNet.series.length === 0) {
+    // Align both series to only include dates present in both to ensure a consistent date cutoff
+    const netDates = new Set(dataNet.series.map(s => s.date));
+    const common3x = data3x.series.filter(s => netDates.has(s.date));
+    const commonDates = new Set(common3x.map(s => s.date));
+    data3x.series = common3x;
+    dataNet.series = dataNet.series.filter(s => commonDates.has(s.date));
+
+    // Sanity check valid-rows count (should be more than 1)
+    if (data3x.series.length <= 1 || dataNet.series.length <= 1) {
+      console.warn(`[rcg-alpha-nav] Suspiciously low valid rows count. 3x count: ${data3x.series.length}, Net count: ${dataNet.series.length}`);
       return NextResponse.json({
-        error: 'No valid final NAV data points found in sheets.'
+        error: `No valid final NAV data points found in sheets (3x rows: ${data3x.series.length}, Net rows: ${dataNet.series.length}).`
       }, { status: 400 });
     }
 
     // ──────────────────────────────────────────
-    // Supabase storage
+    // Supabase storage (Delete old rows first, then insert new)
     // ──────────────────────────────────────────
-    // 1. Series upserts
+    // 1. Clear existing rows
+    const [delSeriesRes, delForecastRes] = await Promise.all([
+      supabase.from('nav_series').delete().neq('dashboard_type', 'none'),
+      supabase.from('nav_forecast').delete().neq('dashboard_type', 'none'),
+    ]);
+
+    if (delSeriesRes.error) {
+      console.error('[rcg-alpha-nav] Supabase series delete error:', delSeriesRes.error);
+      throw new Error(`Database error (nav_series clear): ${delSeriesRes.error.message}`);
+    }
+    if (delForecastRes.error) {
+      console.error('[rcg-alpha-nav] Supabase forecast delete error:', delForecastRes.error);
+      throw new Error(`Database error (nav_forecast clear): ${delForecastRes.error.message}`);
+    }
+
+    // 2. Insert series rows
     const seriesRows = [
       ...data3x.series.map(s => ({ dashboard_type: '3x', date: s.date, final_nav: s.final_nav })),
       ...dataNet.series.map(s => ({ dashboard_type: 'net', date: s.date, final_nav: s.final_nav })),
     ];
 
-    // Batch upsert in Supabase (onConflict: 'dashboard_type,date')
     const { error: seriesError } = await supabase
       .from('nav_series')
-      .upsert(seriesRows, { onConflict: 'dashboard_type,date' });
+      .insert(seriesRows);
 
     if (seriesError) {
-      console.error('[rcg-alpha-nav] Supabase series upsert error:', seriesError);
-      throw new Error(`Database error (nav_series): ${seriesError.message}`);
+      console.error('[rcg-alpha-nav] Supabase series insert error:', seriesError);
+      throw new Error(`Database error (nav_series insert): ${seriesError.message}`);
     }
 
-    // 2. Forecast upserts
+    // 3. Insert forecast rows
     const forecastRows = [
       { dashboard_type: '3x', annualized_forecast: data3x.forecast, updated_at: new Date().toISOString() },
       { dashboard_type: 'net', annualized_forecast: dataNet.forecast, updated_at: new Date().toISOString() },
@@ -146,11 +190,11 @@ export async function POST(req: NextRequest) {
 
     const { error: forecastError } = await supabase
       .from('nav_forecast')
-      .upsert(forecastRows, { onConflict: 'dashboard_type' });
+      .insert(forecastRows);
 
     if (forecastError) {
-      console.error('[rcg-alpha-nav] Supabase forecast upsert error:', forecastError);
-      throw new Error(`Database error (nav_forecast): ${forecastError.message}`);
+      console.error('[rcg-alpha-nav] Supabase forecast insert error:', forecastError);
+      throw new Error(`Database error (nav_forecast insert): ${forecastError.message}`);
     }
 
     // ──────────────────────────────────────────

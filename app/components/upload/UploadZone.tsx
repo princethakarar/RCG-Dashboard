@@ -65,13 +65,18 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUploadSuccess, files }
         body: formData,
       });
 
-      const json = await res.ok ? await res.json() : null;
+      let json;
+      try {
+        json = await res.json();
+      } catch {
+        json = null;
+      }
+
       if (res.ok && json?.success) {
         setSuccessMsg(`${file.name} ✓ Added to data folder`);
         // Wait for Vercel Blob to propagate in production before re-fetching dashboard data
         await new Promise(resolve => setTimeout(resolve, 2500));
         onUploadSuccess(); // Trigger refetch of list in parent
-
       } else {
         throw new Error(json?.error || 'Failed to upload file');
       }
@@ -97,7 +102,13 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUploadSuccess, files }
         method: 'DELETE',
       });
 
-      const json = await res.ok ? await res.json() : null;
+      let json;
+      try {
+        json = await res.json();
+      } catch {
+        json = null;
+      }
+
       if (res.ok && json?.success) {
         setSuccessMsg(`Successfully removed "${name}"`);
         onUploadSuccess();

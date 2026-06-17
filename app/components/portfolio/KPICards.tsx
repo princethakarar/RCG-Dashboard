@@ -11,8 +11,7 @@ import {
   Calendar, 
   Activity, 
   BarChart2,
-  TrendingDown,
-  Info
+  TrendingDown
 } from 'lucide-react';
 
 interface KPICardsProps {
@@ -43,13 +42,6 @@ export const KPICards: React.FC<KPICardsProps> = ({ metrics }) => {
           <CardDescription className="kpi-card-label font-semibold uppercase tracking-wide text-[#9B8A92] flex items-center justify-between gap-1">
             <span className="leading-tight">RUNNING ROI ON DEPOSIT</span>
             <div className="flex items-center gap-1 shrink-0">
-              <div className="relative group inline-block">
-                <Info size={12} className="text-[#9B8A92] hover:text-[#1A0A10] cursor-pointer" />
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-60 p-2.5 bg-[#1A0A10] text-white text-[10.5px] font-medium rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-xl z-50 leading-normal text-center font-sans">
-                  Cumulative sum of daily ROI%. Calculated as: daily P&amp;L &divide; total deposit &times; 100.
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1A0A10]" />
-                </div>
-              </div>
               {currentRunningROI >= 0 ? (
                 <TrendingUp className="w-3.5 h-3.5 text-[#16A34A]" />
               ) : (

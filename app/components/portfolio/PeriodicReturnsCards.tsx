@@ -3,7 +3,6 @@
 import React from 'react';
 import { PortfolioRow } from '../../lib/types';
 import { Card, CardContent } from '../ui/card';
-import { Info } from 'lucide-react';
 import { formatPct } from '../../lib/formatters';
 
 interface PeriodicReturnsCardsProps {
@@ -94,15 +93,6 @@ export const PeriodicReturnsCards: React.FC<PeriodicReturnsCardsProps> = ({ data
                 <span className="text-[10px] sm:text-[11px] font-bold text-[#9B8A92] uppercase tracking-wider">
                   {card.label}
                 </span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <div className="relative group inline-block">
-                    <Info size={12} className="text-[#9B8A92] hover:text-[#1A0A10] cursor-pointer" />
-                    <div className="absolute bottom-full right-0 mb-2 w-56 p-2.5 bg-[#1A0A10] text-white text-[10px] font-medium rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-xl z-50 leading-normal text-center">
-                      {card.tooltip}
-                      <div className="absolute top-full right-2 border-4 border-transparent border-t-[#1A0A10]" />
-                    </div>
-                  </div>
-                </div>
               </div>
 
               <h3 

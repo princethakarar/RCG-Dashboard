@@ -317,18 +317,36 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const url = searchParams.get('url');
 
-    if (!url) {
-      return NextResponse.json({ error: 'Missing url parameter' }, { status: 400 });
+    // 1. Clear database tables in Supabase
+    const [resTrading, res3x, resNet] = await Promise.all([
+      supabase.from('trading_data').delete().neq('id', 0),
+      supabase.from('portfolio_3x').delete().neq('id', 0),
+      supabase.from('portfolio_net_asset').delete().neq('id', 0),
+    ]);
+
+    if (resTrading.error) {
+      throw new Error(`Database error (trading_data delete): ${resTrading.error.message}`);
+    }
+    if (res3x.error) {
+      throw new Error(`Database error (portfolio_3x delete): ${res3x.error.message}`);
+    }
+    if (resNet.error) {
+      throw new Error(`Database error (portfolio_net_asset delete): ${resNet.error.message}`);
     }
 
-    // Verify it is a Vercel Blob URL to prevent deleting arbitrary URLs
-    if (!url.includes('.blob.vercel-storage.com/')) {
-      return NextResponse.json({ error: 'Invalid blob URL' }, { status: 400 });
+    // 2. If a valid Vercel Blob URL is provided, delete it
+    if (url && url.includes('.blob.vercel-storage.com/')) {
+      await del(url, { token: process.env.BLOB_READ_WRITE_TOKEN });
     }
 
-    await del(url, { token: process.env.BLOB_READ_WRITE_TOKEN });
+    // 3. Invalidate Redis cache
+    await invalidateCache(
+      CACHE_KEYS.DASHBOARD_3X,
+      CACHE_KEYS.DASHBOARD_NET_ASSET,
+      CACHE_KEYS.DASHBOARD_FORECAST,
+      CACHE_KEYS.DASHBOARD_FILES,
+    );
 
-    // Bust the cache after deletion too
     revalidatePath('/api/portfolio-data');
 
     return NextResponse.json({ success: true });

@@ -6,7 +6,6 @@ import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianG
 import { PortfolioRow, PortfolioMetrics } from '../../lib/types';
 import { formatDate } from '../../lib/formatters';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
-import { Info } from 'lucide-react';
 import { useBreakpoint, getXAxisTickInterval, getChartTickFontSize } from '../../hooks/useBreakpoint';
 
 interface SwingComparisonChartProps {
@@ -74,13 +73,6 @@ export const SwingComparisonChart: React.FC<SwingComparisonChartProps> = ({ data
           <div>
             <CardTitle className="text-sm sm:text-[15px] font-semibold text-[#1A0A10] tracking-tight flex items-center gap-1.5 flex-wrap">
               <span>Portfolio Swing vs Nifty Swing — Daily Comparison</span>
-              <div className="relative group inline-block no-print">
-                <Info size={14} className="text-[#9B8A92] hover:text-[#1A0A10] cursor-pointer" />
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2.5 bg-[#1A0A10] text-white text-[10.5px] font-medium rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-xl z-50 leading-normal text-center font-sans">
-                  Bars show portfolio daily ROI. Line shows Nifty intraday range (High-Low)/Close%.
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1A0A10]" />
-                </div>
-              </div>
             </CardTitle>
             <CardDescription className="text-[11px] sm:text-[12px] text-[#9B8A92] mt-0.5">
               Avg portfolio daily ROI vs Nifty daily swing % across trading days

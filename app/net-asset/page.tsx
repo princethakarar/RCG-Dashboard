@@ -18,12 +18,13 @@ import { AnnualizedForecastCard } from '../components/portfolio/AnnualizedForeca
 import { PeriodicReturnsCards } from '../components/portfolio/PeriodicReturnsCards';
 import { ReturnDistribution } from '../components/portfolio/ReturnDistribution';
 import { SwingComparisonChart } from '../components/portfolio/SwingComparisonChart';
+import { NAVChart } from '../components/portfolio/NAVChart';
 import { FolderOpen, ArrowRight, ShieldAlert, Loader } from 'lucide-react';
 import Link from 'next/link';
 import { formatDate } from '../lib/formatters';
 
 export default function NetAssetPortfolioPage() {
-  const { netAssetData: data, netAssetMetrics: metrics, loading, error, refetch } = usePortfolio();
+  const { netAssetData: data, netAssetNavSeries: navSeries, netAssetMetrics: metrics, loading, error, refetch } = usePortfolio();
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -103,6 +104,13 @@ export default function NetAssetPortfolioPage() {
             <div id="section-performance" className="scroll-mt-20" data-chart-card data-chart-full>
               <RunningROIChart data={data} />
             </div>
+
+            {/* NAV Performance Chart */}
+            {navSeries && navSeries.length > 0 && (
+              <div className="scroll-mt-20 animate-fade-in" data-chart-card data-chart-full>
+                <NAVChart series={navSeries} />
+              </div>
+            )}
 
             {/* 3. Daily Returns + Net MTM Charts */}
             <div id="section-daily" className="chart-pair-grid scroll-mt-20" data-chart-row>

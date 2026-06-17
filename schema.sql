@@ -63,4 +63,23 @@ CREATE TABLE IF NOT EXISTS site_settings (
 
 ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
 
+CREATE TABLE IF NOT EXISTS nav_series (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  dashboard_type  TEXT NOT NULL CHECK (dashboard_type IN ('3x', 'net')),
+  date            DATE NOT NULL,
+  final_nav       NUMERIC(15, 4) NOT NULL,
+  uploaded_at     TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (dashboard_type, date)
+);
+
+CREATE TABLE IF NOT EXISTS nav_forecast (
+  dashboard_type      TEXT PRIMARY KEY CHECK (dashboard_type IN ('3x', 'net')),
+  annualized_forecast NUMERIC(10, 6) NOT NULL,
+  updated_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE nav_series ENABLE ROW LEVEL SECURITY;
+ALTER TABLE nav_forecast ENABLE ROW LEVEL SECURITY;
+
+
 

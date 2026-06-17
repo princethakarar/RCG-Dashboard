@@ -7,13 +7,6 @@ import { PortfolioRow } from '../../lib/types';
 export const dynamic = 'force-dynamic';
 
 // ─── Supabase row types ───────────────────────────────
-interface TradingDataRow {
-  date: string;
-  net_mtm: number;
-  running_pl: number;
-  avg_deposit: number;
-  net_margin: number;
-}
 
 interface Portfolio3xRow {
   date: string;
@@ -41,14 +34,6 @@ interface PortfolioNetAssetRow {
   close: number | null;
 }
 
-interface ForecastData {
-  annualizedForecast3x: number | null;
-  annualizedForecastNetAsset: number | null;
-  _forecastDebug: {
-    '3x': { colC: number | null; colP: number | null; result: number | null; calendarDays: number };
-    netAsset: { colC: number | null; colQ: number | null; result: number | null; calendarDays: number };
-  };
-}
 
 // ─── Map DB rows to PortfolioRow shape ────────────────
 function map3xRow(row: Portfolio3xRow): PortfolioRow {
@@ -81,69 +66,15 @@ function mapNetAssetRow(row: PortfolioNetAssetRow): PortfolioRow {
   };
 }
 
-// ─── Compute annualized forecast from trading_data ────
-function computeForecast(tradingRows: TradingDataRow[]): ForecastData {
-  let lastValid3xRunningPL: number | null = null;
-  let lastValid3xAvgDeposit: number | null = null;
-  let lastValidNetAssetRunningPL: number | null = null;
-  let lastValidNetAssetNetMargin: number | null = null;
-  let calendarDays = 0;
-
-  // First trading date from row 0 (rows are sorted by date ASC)
-  const firstTradingDate = tradingRows.length > 0 ? new Date(tradingRows[0].date) : null;
-
-  // Walk backward to find last row where Col C and Col P are both valid and non-zero
-  for (let i = tradingRows.length - 1; i >= 0; i--) {
-    const row = tradingRows[i];
-    const colC = row.running_pl;
-    const colP = row.avg_deposit;
-    const colQ = row.net_margin;
-
-    if (colC !== 0 && colP !== 0) {
-      lastValid3xRunningPL = colC;
-      lastValid3xAvgDeposit = colP;
-      lastValidNetAssetRunningPL = colC;
-      lastValidNetAssetNetMargin = colQ;
-
-      if (firstTradingDate) {
-        const lastDate = new Date(row.date);
-        calendarDays = Math.round((lastDate.getTime() - firstTradingDate.getTime()) / (1000 * 60 * 60 * 24));
-      }
-
-      console.log(`[portfolio-data] Forecast row ${i}: ColC=${colC}, ColP=${colP}, ColQ=${colQ}, calendarDays=${calendarDays}`);
-      break;
-    }
-  }
-
-  const annualizedForecast3x = (lastValid3xRunningPL !== null && lastValid3xAvgDeposit !== null && lastValid3xAvgDeposit !== 0 && calendarDays > 0)
-    ? ((lastValid3xRunningPL * 100 / lastValid3xAvgDeposit) * 365) / calendarDays
-    : null;
-
-  const annualizedForecastNetAsset = (lastValidNetAssetRunningPL !== null && lastValidNetAssetNetMargin !== null && lastValidNetAssetNetMargin !== 0 && calendarDays > 0)
-    ? ((lastValidNetAssetRunningPL * 100 / lastValidNetAssetNetMargin) * 365) / calendarDays
-    : null;
-
-  return {
-    annualizedForecast3x,
-    annualizedForecastNetAsset,
-    _forecastDebug: {
-      '3x': { colC: lastValid3xRunningPL, colP: lastValid3xAvgDeposit, result: annualizedForecast3x, calendarDays },
-      netAsset: { colC: lastValidNetAssetRunningPL, colQ: lastValidNetAssetNetMargin, result: annualizedForecastNetAsset, calendarDays },
-    },
-  };
-}
-
 // ─── Fetch all rows from Supabase ─────────────────────
 async function fetchFromSupabase(): Promise<{
   data3x: PortfolioRow[];
   dataNetAsset: PortfolioRow[];
-  tradingRows: TradingDataRow[];
 }> {
-  // Fetch all 3 tables in parallel
-  const [res3x, resNet, resTrading] = await Promise.all([
+  // Fetch both tables in parallel
+  const [res3x, resNet] = await Promise.all([
     supabase.from('portfolio_3x').select('*').order('date', { ascending: true }),
     supabase.from('portfolio_net_asset').select('*').order('date', { ascending: true }),
-    supabase.from('trading_data').select('*').order('date', { ascending: true }),
   ]);
 
   if (res3x.error) {
@@ -154,10 +85,6 @@ async function fetchFromSupabase(): Promise<{
     console.error('[portfolio-data] Supabase portfolio_net_asset error:', resNet.error);
     throw new Error(`Database error (portfolio_net_asset): ${resNet.error.message}`);
   }
-  if (resTrading.error) {
-    console.error('[portfolio-data] Supabase trading_data error:', resTrading.error);
-    throw new Error(`Database error (trading_data): ${resTrading.error.message}`);
-  }
 
   const data3x = (res3x.data as Portfolio3xRow[]).map(map3xRow);
   const dataNetAsset = (resNet.data as PortfolioNetAssetRow[]).map(mapNetAssetRow);
@@ -165,8 +92,42 @@ async function fetchFromSupabase(): Promise<{
   return {
     data3x,
     dataNetAsset,
-    tradingRows: resTrading.data as TradingDataRow[],
   };
+}
+
+interface NavDataPoint {
+  date: string;
+  final_nav: number;
+}
+
+async function fetchNavSeries(dashboardType: '3x' | 'net'): Promise<NavDataPoint[]> {
+  const { data, error } = await supabase
+    .from('nav_series')
+    .select('date, final_nav')
+    .eq('dashboard_type', dashboardType)
+    .order('date', { ascending: true });
+
+  if (error) {
+    console.error(`[portfolio-data] Error fetching nav_series for ${dashboardType}:`, error);
+    return [];
+  }
+  return data as NavDataPoint[];
+}
+
+async function fetchNavForecast(dashboardType: '3x' | 'net'): Promise<number | null> {
+  const { data, error } = await supabase
+    .from('nav_forecast')
+    .select('annualized_forecast')
+    .eq('dashboard_type', dashboardType)
+    .single();
+
+  if (error) {
+    if (error.code !== 'PGRST116') { // PGRST116 is code for 0 rows returned
+      console.error(`[portfolio-data] Error fetching nav_forecast for ${dashboardType}:`, error);
+    }
+    return null;
+  }
+  return data ? Number(data.annualized_forecast) : null;
 }
 
 export async function GET() {
@@ -174,19 +135,50 @@ export async function GET() {
 
   try {
     // ──────────────────────────────────────────
-    // Step 1: Try Redis cache
+    // Step 1: Try Redis cache for all data
     // ──────────────────────────────────────────
-    const [cached3x, cachedNet, cachedForecast] = await Promise.all([
+    const [
+      cached3x,
+      cachedNet,
+      cachedNav3xSeries,
+      cachedNavNetSeries,
+      cachedNav3xForecast,
+      cachedNavNetForecast
+    ] = await Promise.all([
       getCachedData<PortfolioRow[]>(CACHE_KEYS.DASHBOARD_3X),
       getCachedData<PortfolioRow[]>(CACHE_KEYS.DASHBOARD_NET_ASSET),
-      getCachedData<ForecastData>(CACHE_KEYS.DASHBOARD_FORECAST),
+      getCachedData<NavDataPoint[]>('nav:3x:series'),
+      getCachedData<NavDataPoint[]>('nav:net:series'),
+      getCachedData<string>('nav:3x:forecast'),
+      getCachedData<string>('nav:net:forecast'),
     ]);
 
-    // If ALL cache keys hit, return immediately
-    if (cached3x && cachedNet && cachedForecast) {
-      console.log('[portfolio-data] Cache HIT — returning cached data');
+    // Parse cached forecast values
+    const nav3xForecast = cachedNav3xForecast !== null ? parseFloat(cachedNav3xForecast) : null;
+    const navNetForecast = cachedNavNetForecast !== null ? parseFloat(cachedNavNetForecast) : null;
 
-      // Build file metadata from cached data
+    // Safely parse JSON strings for series if needed
+    let nav3xSeries = cachedNav3xSeries;
+    if (typeof nav3xSeries === 'string') {
+      try {
+        nav3xSeries = JSON.parse(nav3xSeries);
+      } catch {
+        nav3xSeries = null;
+      }
+    }
+
+    let navNetSeries = cachedNavNetSeries;
+    if (typeof navNetSeries === 'string') {
+      try {
+        navNetSeries = JSON.parse(navNetSeries);
+      } catch {
+        navNetSeries = null;
+      }
+    }
+
+    // If ALL cache keys hit, return immediately
+    if (cached3x && cachedNet && nav3xSeries && navNetSeries && nav3xForecast !== null && navNetForecast !== null) {
+      console.log('[portfolio-data] Cache HIT for all data — returning cached data');
       const fileInfo = buildFileInfo(cached3x);
 
       return NextResponse.json(
@@ -194,41 +186,66 @@ export async function GET() {
           data: cached3x,
           netAssetData: cachedNet,
           files: fileInfo,
-          annualizedForecast3x: cachedForecast.annualizedForecast3x,
-          annualizedForecastNetAsset: cachedForecast.annualizedForecastNetAsset,
-          _forecastDebug: cachedForecast._forecastDebug,
+          annualizedForecast3x: nav3xForecast,
+          annualizedForecastNetAsset: navNetForecast,
+          nav3xSeries: nav3xSeries,
+          navNetSeries: navNetSeries,
           _source: 'redis',
         },
         { headers: noCacheHeaders() }
       );
     }
 
-    console.log('[portfolio-data] Cache MISS — querying Supabase');
+    console.log('[portfolio-data] Cache MISS or partial miss — querying Supabase');
 
     // ──────────────────────────────────────────
-    // Step 2: Fetch from Supabase
+    // Step 2: Fetch from Supabase (Parallelized)
     // ──────────────────────────────────────────
-    const { data3x, dataNetAsset, tradingRows } = await fetchFromSupabase();
-
-    // ──────────────────────────────────────────
-    // Step 3: Compute forecast
-    // ──────────────────────────────────────────
-    const forecastData = computeForecast(tradingRows);
-
-    // ──────────────────────────────────────────
-    // Step 4: Cache raw rows + forecast in Redis (24h TTL)
-    // ──────────────────────────────────────────
-    await Promise.all([
-      setCachedData(CACHE_KEYS.DASHBOARD_3X, data3x),
-      setCachedData(CACHE_KEYS.DASHBOARD_NET_ASSET, dataNetAsset),
-      setCachedData(CACHE_KEYS.DASHBOARD_FORECAST, forecastData),
+    const [
+      supabaseData,
+      dbNav3xSeries,
+      dbNavNetSeries,
+      dbNav3xForecast,
+      dbNavNetForecast
+    ] = await Promise.all([
+      fetchFromSupabase(),
+      nav3xSeries || fetchNavSeries('3x'),
+      navNetSeries || fetchNavSeries('net'),
+      nav3xForecast !== null ? nav3xForecast : fetchNavForecast('3x'),
+      navNetForecast !== null ? navNetForecast : fetchNavForecast('net'),
     ]);
 
-    console.log(`[portfolio-data] Cached ${data3x.length} 3x rows, ${dataNetAsset.length} net-asset rows to Redis`);
+    const { data3x, dataNetAsset } = supabaseData;
 
     // ──────────────────────────────────────────
-    // Step 5: Build and return response
+    // Step 3: Populate Redis caches where missing
     // ──────────────────────────────────────────
+    const promises: Promise<void>[] = [];
+    
+    if (!cached3x) {
+      promises.push(setCachedData(CACHE_KEYS.DASHBOARD_3X, data3x));
+    }
+    if (!cachedNet) {
+      promises.push(setCachedData(CACHE_KEYS.DASHBOARD_NET_ASSET, dataNetAsset));
+    }
+    if (!nav3xSeries) {
+      promises.push(setCachedData('nav:3x:series', dbNav3xSeries));
+    }
+    if (!navNetSeries) {
+      promises.push(setCachedData('nav:net:series', dbNavNetSeries));
+    }
+    if (cachedNav3xForecast === null && dbNav3xForecast !== null) {
+      promises.push(setCachedData('nav:3x:forecast', String(dbNav3xForecast)));
+    }
+    if (cachedNavNetForecast === null && dbNavNetForecast !== null) {
+      promises.push(setCachedData('nav:net:forecast', String(dbNavNetForecast)));
+    }
+
+    if (promises.length > 0) {
+      await Promise.all(promises);
+      console.log(`[portfolio-data] Populated ${promises.length} missing cache keys in Redis`);
+    }
+
     const fileInfo = buildFileInfo(data3x);
 
     return NextResponse.json(
@@ -236,9 +253,10 @@ export async function GET() {
         data: data3x,
         netAssetData: dataNetAsset,
         files: fileInfo,
-        annualizedForecast3x: forecastData.annualizedForecast3x,
-        annualizedForecastNetAsset: forecastData.annualizedForecastNetAsset,
-        _forecastDebug: forecastData._forecastDebug,
+        annualizedForecast3x: dbNav3xForecast,
+        annualizedForecastNetAsset: dbNavNetForecast,
+        nav3xSeries: dbNav3xSeries,
+        navNetSeries: dbNavNetSeries,
         _source: 'supabase',
       },
       { headers: noCacheHeaders() }

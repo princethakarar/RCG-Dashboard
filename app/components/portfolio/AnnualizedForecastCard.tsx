@@ -12,6 +12,9 @@ interface AnnualizedForecastCardProps {
 
 export const AnnualizedForecastCard: React.FC<AnnualizedForecastCardProps> = ({ metrics, isNetAsset = false }) => {
   const { annualizedForecast } = metrics;
+  
+  // The forecast is stored as a raw decimal (e.g. 1.5439 represents 154.39%)
+  const displayVal = annualizedForecast != null ? annualizedForecast * 100 : null;
 
   const formatForecast = (val: number) => {
     const sign = val >= 0 ? '+' : '';
@@ -35,7 +38,7 @@ export const AnnualizedForecastCard: React.FC<AnnualizedForecastCardProps> = ({ 
                   <div className="absolute top-full right-2 border-4 border-transparent border-t-[#1A0A10]" />
                 </div>
               </div>
-              {annualizedForecast != null && annualizedForecast >= 0 ? (
+              {displayVal != null && displayVal >= 0 ? (
                 <Crosshair className="w-4 h-4 text-[#16A34A]" />
               ) : (
                 <Crosshair className="w-4 h-4 text-[#DC2626]" />
@@ -43,8 +46,8 @@ export const AnnualizedForecastCard: React.FC<AnnualizedForecastCardProps> = ({ 
             </div>
           </div>
 
-          <h3 className={`stat-card-value font-extrabold tabular-nums mt-3 sm:mt-4 leading-none tracking-tight ${annualizedForecast != null && annualizedForecast >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
-            {annualizedForecast != null ? formatForecast(annualizedForecast) : 'N/A'}
+          <h3 className={`stat-card-value font-extrabold tabular-nums mt-3 sm:mt-4 leading-none tracking-tight ${displayVal != null && displayVal >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+            {displayVal != null ? formatForecast(displayVal) : 'N/A'}
           </h3>
           <span className="text-[11px] text-[#9B8A92] mt-1.5 block">
             Based on last trading day

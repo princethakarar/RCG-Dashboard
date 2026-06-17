@@ -66,7 +66,7 @@ export default function LoginPage() {
               Welcome Back
             </h1>
             <p className="text-xs text-[#9B8A92] mt-1.5">
-              Login to access your dashboard.
+              Login to access our dashboard.
             </p>
           </div>
 
@@ -88,7 +88,7 @@ export default function LoginPage() {
                 htmlFor="email" 
                 className="block text-[11px] font-bold text-[#6B4A58] uppercase tracking-[0.05em]"
               >
-                Email Address
+                Email
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

@@ -83,7 +83,7 @@ export default function NetAssetPortfolioPage() {
               </div>
             </div>
             <div className="text-[7pt] text-[#9B8A92] text-right">
-              <div>Rising Intern Portfolio · Net Asset</div>
+              <div>Rising Alpha Creator Portfolio · Net Asset</div>
               <div>{formatDate(metrics.dateRange.from)} – {formatDate(metrics.dateRange.to)} · {metrics.totalDays} Trading Days</div>
               <div>Generated: {new Date().toLocaleString('en-IN')}</div>
             </div>

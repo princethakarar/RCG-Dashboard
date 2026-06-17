@@ -21,11 +21,28 @@ export const NAVChart: React.FC<NAVChartProps> = ({ series }) => {
     displayDate: formatDate(row.date),
   }));
 
+  const yTicks = React.useMemo(() => {
+    if (!series || series.length === 0) return [];
+    const values = series.map(s => s.final_nav).filter(v => typeof v === 'number' && !isNaN(v));
+    if (values.length === 0) return [];
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    
+    const startVal = Math.floor(min * 2);
+    const endVal = Math.ceil(max * 2);
+    const ticks = [];
+    for (let i = startVal; i <= endVal; i++) {
+      ticks.push(i / 2);
+    }
+    return ticks;
+  }, [series]);
+
   const formatNAVValue = (val: number) => {
     return val.toLocaleString('en-IN', { 
       style: 'currency', 
       currency: 'INR', 
-      maximumFractionDigits: 0 
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2 
     });
   };
 
@@ -96,11 +113,15 @@ export const NAVChart: React.FC<NAVChartProps> = ({ series }) => {
                   tickLine={false}
                   dx={-4}
                   width={70}
-                  domain={['auto', 'auto']}
+                  ticks={yTicks}
+                  domain={yTicks.length > 0 ? [yTicks[0], yTicks[yTicks.length - 1]] : ['auto', 'auto']}
                   tickFormatter={(v) => {
-                    if (v >= 10000000) return `₹${(v / 10000000).toFixed(1)}Cr`;
-                    if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`;
-                    return `₹${v}`;
+                    return v.toLocaleString('en-IN', {
+                      style: 'currency',
+                      currency: 'INR',
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                    });
                   }}
                 />
 

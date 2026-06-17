@@ -17,12 +17,12 @@ export const PageHeader: React.FC = () => {
     <div className="w-full bg-white dashboard-container pt-5 md:pt-7 pb-2 border-b border-rcg-border/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 select-none">
       <div className="flex flex-col">
         <h1 className="text-xl sm:text-2xl lg:text-[28px] font-extrabold text-[#1A0A10] tracking-tight leading-tight">
-          Rising Intern Portfolio <span className="text-[#8B0A3D]">{isNetAsset ? 'Net Asset' : '3x Leverage'}</span>
+          Rising Alpha Creator Portfolio <span className="text-[#8B0A3D]">{isNetAsset ? 'Net Asset' : '3x Leverage'}</span>
         </h1>
         <p className="text-xs sm:text-[13px] font-normal text-[#9B8A92] mt-1.5 sm:mt-2 font-sans">
           {isNetAsset 
-            ? `NIFTY vs RCG Intern Net Asset · NSE F&O Options · ${!loading && data.length > 0 ? `${tradingDays} Trading Days` : 'Loading metrics...'}`
-            : `NIFTY vs RCG Intern · NSE F&O Options · ${!loading && data.length > 0 ? `${tradingDays} Trading Days` : 'Loading metrics...'}`
+            ? `NIFTY vs RCG Alpha Creator Net Asset · NSE F&O Options · ${!loading && data.length > 0 ? `${tradingDays} Trading Days` : 'Loading metrics...'}`
+            : `NIFTY vs RCG Alpha Creator · NSE F&O Options · ${!loading && data.length > 0 ? `${tradingDays} Trading Days` : 'Loading metrics...'}`
           }
         </p>
       </div>

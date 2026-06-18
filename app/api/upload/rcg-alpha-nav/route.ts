@@ -50,46 +50,56 @@ interface ParsedNavData {
   forecast: number;
 }
 
-function isGrossPlCutoff(val: unknown, cell?: XLSX.CellObject): boolean {
-  if (val === null || val === undefined) return false;
-  const str = String(val).trim();
-  if (str === '-' || str === '–' || str === '—') return true;
-  if (cell && cell.w) {
-    const formatted = cell.w.trim();
-    if (formatted === '-' || formatted === '–' || formatted === '—') return true;
+function parseSheet(ws: XLSX.WorkSheet, sheetName: string): ParsedNavData {
+  const z3Cell = ws['Z3'];
+  if (!z3Cell || z3Cell.v === undefined || z3Cell.v === null) {
+    throw new Error(`Cell Z3 (last valid trading date) is missing or blank in sheet "${sheetName}".`);
   }
-  return false;
-}
+  const z3DateStr = parseExcelDate(z3Cell.v);
+  if (!z3DateStr) {
+    throw new Error(`Cell Z3 in sheet "${sheetName}" could not be parsed as a valid date.`);
+  }
 
-function parseSheet(ws: XLSX.WorkSheet): ParsedNavData {
   const rawData = XLSX.utils.sheet_to_json(ws, { header: 1 }) as ExcelCellValue[][];
   const series: { date: string; final_nav: number }[] = [];
+
+  // Track if we find a row matching the exact Z3 date in the sheet
+  let hasZ3DateInSheet = false;
 
   // Parse rows starting from row 3 (index 2)
   for (let i = 2; i < rawData.length; i++) {
     const row = rawData[i];
     if (!row || row.length === 0) continue;
 
-    // Cutoff check based on Column I (GROSS P&L F&O at index 8)
-    const grossPl = row[8];
-    const cellRef = XLSX.utils.encode_cell({ r: i, c: 8 });
-    const cell = ws[cellRef];
-    console.log(`[parseSheet] Row ${i+1}: date=${row[0]}, grossPl=${grossPl} (type: ${typeof grossPl}), cell.v=${cell?.v}, cell.w=${cell?.w}, cell.t=${cell?.t}`);
-
-    if (i > 2 && isGrossPlCutoff(grossPl, cell)) {
-      break; // Stop processing immediately on literal "-"
-    }
-
     const dateStr = parseExcelDate(row[0]);
     if (!dateStr) continue;
 
-    const finalNav = parseNavValue(row[16]); // Column Q (index 16)
-    if (finalNav === null) continue;
+    if (dateStr === z3DateStr) {
+      hasZ3DateInSheet = true;
+    }
 
-    series.push({
-      date: dateStr,
-      final_nav: finalNav,
-    });
+    // Only include a row in the valid dataset if its Column A (DATE) value is LESS THAN OR EQUAL TO the date in Z3
+    if (dateStr <= z3DateStr) {
+      const finalNav = parseNavValue(row[16]); // Column Q (index 16)
+      if (finalNav === null) continue;
+
+      series.push({
+        date: dateStr,
+        final_nav: finalNav,
+      });
+    }
+  }
+
+  // Validation:
+  // After filtering, the last row in the resulting dataset should have a DATE exactly equal to the sheet's Z3 value (assuming there's a row for that exact date)
+  if (hasZ3DateInSheet) {
+    if (series.length === 0) {
+      throw new Error(`Validation failed for sheet "${sheetName}": series is empty but Z3 date "${z3DateStr}" exists in the sheet.`);
+    }
+    const lastRowDate = series[series.length - 1].date;
+    if (lastRowDate !== z3DateStr) {
+      throw new Error(`Validation failed for sheet "${sheetName}": Last parsed row date "${lastRowDate}" does not match the Z3 date "${z3DateStr}".`);
+    }
   }
 
   // Extract cell AA8 (AA is column index 26, row index 7)
@@ -131,15 +141,8 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    const data3x = parseSheet(wb.Sheets[rip3xSheetName]);
-    const dataNet = parseSheet(wb.Sheets[ripNetSheetName]);
-
-    // Align both series to only include dates present in both to ensure a consistent date cutoff
-    const netDates = new Set(dataNet.series.map(s => s.date));
-    const common3x = data3x.series.filter(s => netDates.has(s.date));
-    const commonDates = new Set(common3x.map(s => s.date));
-    data3x.series = common3x;
-    dataNet.series = dataNet.series.filter(s => commonDates.has(s.date));
+    const data3x = parseSheet(wb.Sheets[rip3xSheetName], rip3xSheetName);
+    const dataNet = parseSheet(wb.Sheets[ripNetSheetName], ripNetSheetName);
 
     // Sanity check valid-rows count (should be more than 1)
     if (data3x.series.length <= 1 || dataNet.series.length <= 1) {

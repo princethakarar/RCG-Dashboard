@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { UploadCloud, CheckCircle, AlertCircle, RefreshCw, FileSpreadsheet, Trash2 } from 'lucide-react';
+import { UploadCloud, CheckCircle, AlertCircle, RefreshCw, FileSpreadsheet, Trash2, X } from 'lucide-react';
 
 interface NavFileDetails {
   name: string;
@@ -190,16 +190,32 @@ export const NavUploadZone: React.FC<NavUploadZoneProps> = ({ onUploadSuccess, f
 
       {/* Success/Error Banners */}
       {successMsg && (
-        <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-xl flex items-center gap-2.5 text-xs font-semibold animate-fade-in shadow-sm font-sans">
-          <CheckCircle size={16} className="text-green-600 shrink-0" />
-          <span>{successMsg}</span>
+        <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-md flex items-start justify-between gap-2.5 text-xs font-semibold animate-fade-in shadow-sm font-sans">
+          <div className="flex items-start gap-2.5">
+            <CheckCircle size={16} className="text-green-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-sm mb-1">Success</p>
+              <p className="font-normal">{successMsg}</p>
+            </div>
+          </div>
+          <button onClick={() => setSuccessMsg(null)} className="text-green-600 hover:bg-green-100 p-1 rounded-md transition-colors shrink-0">
+            <X size={14} />
+          </button>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl flex items-center gap-2.5 text-xs font-semibold animate-fade-in shadow-sm font-sans">
-          <AlertCircle size={16} className="text-red-600 shrink-0" />
-          <span>{error}</span>
+        <div className="bg-[#C41E5A]/10 border border-[#C41E5A]/20 text-[#C41E5A] p-4 rounded-md flex items-start justify-between gap-2.5 text-xs font-semibold animate-fade-in shadow-sm font-sans">
+          <div className="flex items-start gap-2.5">
+            <AlertCircle size={16} className="text-[#C41E5A] shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-sm mb-1">Upload Failed</p>
+              <p className="font-normal">{error}</p>
+            </div>
+          </div>
+          <button onClick={() => setError(null)} className="text-[#C41E5A] hover:bg-[#C41E5A]/20 p-1 rounded-md transition-colors shrink-0">
+            <X size={14} />
+          </button>
         </div>
       )}
 

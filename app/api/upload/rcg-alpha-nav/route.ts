@@ -5,6 +5,8 @@ import { supabase } from '../../../lib/supabase';
 import redis, { invalidateCache, CACHE_KEYS } from '../../../lib/redis';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 type ExcelCellValue = string | number | Date | null | undefined;
 
@@ -123,10 +125,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
+    console.log(`[rcg-alpha-nav] Received file: ${file.name}, size: ${file.size} bytes`);
+    if (file.size > 4.5 * 1024 * 1024) {
+      console.warn(`[rcg-alpha-nav] WARNING: File size (${(file.size / 1024 / 1024).toFixed(2)} MB) is over 4.5MB. This may hit Vercel's payload limit in production, but we will attempt to process it anyway.`);
+    }
+
     if (!file.name.endsWith('.xlsx')) {
       return NextResponse.json({ error: 'Only .xlsx files are allowed' }, { status: 400 });
     }
 
+    console.log('[rcg-alpha-nav] Reading file buffer...');
     const arrayBuffer = await file.arrayBuffer();
     const fileBuffer = Buffer.from(arrayBuffer);
     const wb = XLSX.read(fileBuffer, { type: 'buffer', cellDates: true });
@@ -136,10 +144,13 @@ export async function POST(req: NextRequest) {
     const ripNetSheetName = wb.SheetNames.find(s => s.trim().toUpperCase() === 'RIP NET');
 
     if (!rip3xSheetName || !ripNetSheetName) {
+      console.error('[rcg-alpha-nav] Missing expected sheets. Found:', wb.SheetNames);
       return NextResponse.json({
-        error: 'Invalid file structure. Must contain both "RIP 3X" and "RIP NET" sheets.'
+        error: "This file doesn't match the expected RCG Alpha NAV format. Please check the sheet names and columns."
       }, { status: 400 });
     }
+
+    console.log('[rcg-alpha-nav] Parsing sheets...');
 
     const data3x = parseSheet(wb.Sheets[rip3xSheetName], rip3xSheetName);
     const dataNet = parseSheet(wb.Sheets[ripNetSheetName], ripNetSheetName);
@@ -155,6 +166,7 @@ export async function POST(req: NextRequest) {
     // ──────────────────────────────────────────
     // Supabase storage (Delete old rows first, then insert new)
     // ──────────────────────────────────────────
+    console.log('[rcg-alpha-nav] Deleting old rows from Supabase...');
     // 1. Clear existing rows
     const [delSeriesRes, delForecastRes] = await Promise.all([
       supabase.from('nav_series').delete().neq('dashboard_type', 'none'),
@@ -171,11 +183,12 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Insert series rows
+    // 2. Insert series rows
     const seriesRows = [
       ...data3x.series.map(s => ({ dashboard_type: '3x', date: s.date, final_nav: s.final_nav })),
       ...dataNet.series.map(s => ({ dashboard_type: 'net', date: s.date, final_nav: s.final_nav })),
     ];
-
+    console.log(`[rcg-alpha-nav] Inserting ${seriesRows.length} series rows into Supabase...`);
     const { error: seriesError } = await supabase
       .from('nav_series')
       .insert(seriesRows);
@@ -186,6 +199,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Insert forecast rows
+    console.log(`[rcg-alpha-nav] Inserting forecast rows into Supabase...`);
     const forecastRows = [
       { dashboard_type: '3x', annualized_forecast: data3x.forecast, updated_at: new Date().toISOString() },
       { dashboard_type: 'net', annualized_forecast: dataNet.forecast, updated_at: new Date().toISOString() },
@@ -203,19 +217,28 @@ export async function POST(req: NextRequest) {
     // ──────────────────────────────────────────
     // Upstash Redis Caching
     // ──────────────────────────────────────────
+    console.log('[rcg-alpha-nav] Writing to Redis cache...');
     const sorted3xSeries = [...data3x.series].sort((a, b) => a.date.localeCompare(b.date));
     const sortedNetSeries = [...dataNet.series].sort((a, b) => a.date.localeCompare(b.date));
 
     // Save directly to Redis
-    await Promise.all([
-      redis.set('nav:3x:series', sorted3xSeries),
-      redis.set('nav:net:series', sortedNetSeries),
-      redis.set('nav:3x:forecast', String(data3x.forecast)),
-      redis.set('nav:net:forecast', String(dataNet.forecast)),
-    ]);
+    try {
+      await Promise.all([
+        redis.set('nav:3x:series', sorted3xSeries),
+        redis.set('nav:net:series', sortedNetSeries),
+        redis.set('nav:3x:forecast', String(data3x.forecast)),
+        redis.set('nav:net:forecast', String(dataNet.forecast)),
+      ]);
 
-    // Invalidate the main dashboard forecast cache so it updates
-    await invalidateCache(CACHE_KEYS.DASHBOARD_FORECAST);
+      // Invalidate the main dashboard forecast cache so it updates
+      await invalidateCache(CACHE_KEYS.DASHBOARD_FORECAST);
+      console.log('[rcg-alpha-nav] Redis cache updated successfully.');
+    } catch (redisError) {
+      console.error('[rcg-alpha-nav] Non-critical cache write failure:', redisError);
+      // Cache failure shouldn't block the user from seeing a success message, data is in Supabase
+    }
+
+    console.log('[rcg-alpha-nav] Revalidating paths and finishing upload.');
     revalidatePath('/api/portfolio-data');
 
     return NextResponse.json({
@@ -233,7 +256,21 @@ export async function POST(req: NextRequest) {
 
   } catch (error: unknown) {
     console.error('Error in POST /api/upload/rcg-alpha-nav:', error);
-    return NextResponse.json({ error: (error as Error).message || 'Upload failed' }, { status: 500 });
+    
+    const msg = (error as Error).message || '';
+    let userMessage = 'Something went wrong while uploading this file. Please try again or contact support.';
+    
+    if (msg.includes('Missing expected sheet') || msg.includes('does not match the Z3 date') || msg.includes('Validation failed') || msg.includes('missing or blank')) {
+      userMessage = "This file doesn't match the expected RCG Alpha NAV format. Please check the sheet names and columns.";
+    } else if (msg.includes('Database error')) {
+      userMessage = 'We couldn\'t save this data right now. Please try again in a moment.';
+    } else if (msg.includes('This file is too large') || msg.includes('body size limit')) {
+      userMessage = 'This file is too large to upload. Please contact support if this persists.';
+    } else if (msg.includes('fetch failed') || msg.includes('timeout')) {
+      userMessage = 'The upload took too long to process. Please try again.';
+    }
+
+    return NextResponse.json({ error: userMessage }, { status: 500 });
   }
 }
 

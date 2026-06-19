@@ -2,25 +2,24 @@
 
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { UploadCloud, CheckCircle, AlertCircle, RefreshCw, FileSpreadsheet, Trash2, X } from 'lucide-react';
+import { UploadCloud, CheckCircle, AlertCircle, RefreshCw, FileSpreadsheet, X } from 'lucide-react';
 
-interface NavFileDetails {
+interface StrategyFileDetails {
   name: string;
-  startDate: string;
-  endDate: string;
-  rowCount: number;
+  startDate?: string;
+  endDate?: string;
+  rowCount?: number;
 }
 
-interface NavUploadZoneProps {
+interface StrategyUploadZoneProps {
   onUploadSuccess: () => void;
-  files: NavFileDetails[];
+  files: StrategyFileDetails[];
 }
 
-export const NavUploadZone: React.FC<NavUploadZoneProps> = ({ onUploadSuccess, files }) => {
+export const StrategyUploadZone: React.FC<StrategyUploadZoneProps> = ({ onUploadSuccess, files }) => {
   const router = useRouter();
   const [dragActive, setDragActive] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
-  const [deleting, setDeleting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -67,7 +66,7 @@ export const NavUploadZone: React.FC<NavUploadZoneProps> = ({ onUploadSuccess, f
 
       const worker = new Worker(new URL('../../workers/excel.worker.ts', import.meta.url), { type: 'module' });
       
-      const parsedData = await new Promise<{ data3x: unknown, dataNet: unknown }>((resolve, reject) => {
+      const parsedData = await new Promise<unknown>((resolve, reject) => {
         worker.onmessage = (event) => {
           if (event.data.success) {
             resolve(event.data.data);
@@ -82,93 +81,40 @@ export const NavUploadZone: React.FC<NavUploadZoneProps> = ({ onUploadSuccess, f
           worker.terminate();
         };
 
-        worker.postMessage({ type: 'parse_nav', arrayBuffer }, [arrayBuffer]);
+        worker.postMessage({ type: 'parse_strategy', strategyName: '3 Red Candle', arrayBuffer }, [arrayBuffer]);
       });
 
-      const { data3x, dataNet } = parsedData;
-
       const formData = new FormData();
-      // Conditionally store raw excel if size < 4MB
       if (file.size <= 4 * 1024 * 1024) {
         formData.append('file', file);
       }
-      formData.append('parsedData', JSON.stringify({ data3x, dataNet }));
+      formData.append('parsedData', JSON.stringify(parsedData));
 
-      const res = await fetch('/api/upload/rcg-alpha-nav', {
+      const res = await fetch('/api/upload/strategy', {
         method: 'POST',
         body: formData,
       });
 
-      let json;
-      try {
-        json = await res.json();
-      } catch {
-        json = null;
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Upload failed');
       }
 
-      if (res.ok && json?.success) {
-        setSuccessMsg(`RCG Alpha NAV data updated successfully: ${file.name}`);
-        // Let user see success message, then reload dashboard context
-        setTimeout(() => {
-          onUploadSuccess();
-        }, 1500);
-      } else {
-        throw new Error(json?.error || 'Failed to upload file');
-      }
+      setSuccessMsg(`Successfully uploaded 3 Red Candle Data`);
+      onUploadSuccess();
+      router.refresh();
+      
+      if (inputRef.current) inputRef.current.value = '';
     } catch (err: unknown) {
-      console.error(err);
-      setError((err as Error).message || 'Something went wrong during file upload.');
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDelete = async (fileName: string) => {
-    if (!window.confirm(`Are you sure you want to remove all loaded data for "${fileName}"?`)) {
-      return;
-    }
-
-    setDeleting(true);
-    setError(null);
-    setSuccessMsg(null);
-
-    try {
-      const res = await fetch('/api/upload/rcg-alpha-nav', {
-        method: 'DELETE',
-      });
-
-      let json;
-      try {
-        json = await res.json();
-      } catch {
-        json = null;
-      }
-
-      if (res.ok && json?.success) {
-        setSuccessMsg(`Successfully removed data from "${fileName}"`);
-        onUploadSuccess();
-      } else {
-        throw new Error(json?.error || 'Failed to delete data');
-      }
-    } catch (err: unknown) {
-      console.error(err);
-      setError((err as Error).message || 'Something went wrong during file deletion.');
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const onButtonClick = () => {
-    inputRef.current?.click();
-  };
-
-  const formatDateString = (dateStr: string) => {
-    if (!dateStr) return 'N/A';
-    try {
-      return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-    } catch {
-      return dateStr;
-    }
+  const formatDateString = (dateStr?: string) => {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
   return (
@@ -179,7 +125,7 @@ export const NavUploadZone: React.FC<NavUploadZoneProps> = ({ onUploadSuccess, f
         onDragOver={handleDrag}
         onDragLeave={handleDrag}
         onDrop={handleDrop}
-        onClick={onButtonClick}
+        onClick={() => inputRef.current?.click()}
         className={`w-full min-h-[260px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-8 text-center cursor-pointer transition-all duration-200
           ${dragActive 
             ? 'border-brand-primary bg-brand-surface' 
@@ -198,19 +144,20 @@ export const NavUploadZone: React.FC<NavUploadZoneProps> = ({ onUploadSuccess, f
         {uploading ? (
           <div className="flex flex-col items-center gap-3">
             <RefreshCw size={40} className="text-brand-primary animate-spin" />
-            <p className="text-sm font-bold text-brand-text-primary">Uploading and parsing NAV spreadsheet...</p>
+            <p className="text-sm font-bold text-brand-text-primary">Processing Strategy Data...</p>
+            <p className="text-xs text-brand-text-secondary mt-1 font-sans">Parsing Day-Wise P&amp;L</p>
           </div>
         ) : (
           <div className="flex flex-col items-center">
             <UploadCloud size={40} className="text-brand-primary mb-3" />
             <h4 className="text-sm font-bold text-brand-text-primary tracking-tight">
-              Drag & Drop RCG Alpha NAV File
+              Drag & Drop Strategy Excel File
             </h4>
-            <p className="text-xs text-brand-text-secondary mt-1 max-w-xs leading-relaxed font-sans">
-              Accepts <span className="font-bold">.xlsx</span> files only. Parses &quot;RIP 3X&quot; and &quot;RIP NET&quot; sheets automatically.
+            <p className="text-xs text-brand-text-secondary mt-1 max-w-xs leading-relaxed">
+              Accepts <span className="font-bold">.xlsx</span> files only. Files will be parsed and saved in the strategy database.
             </p>
             <span className="mt-4 px-3 py-1.5 bg-brand-primary text-white text-[11px] font-extrabold rounded-lg hover:bg-brand-secondary transition-colors shadow-sm">
-              Select NAV File
+              Select File From Computer
             </span>
           </div>
         )}
@@ -252,10 +199,10 @@ export const NavUploadZone: React.FC<NavUploadZoneProps> = ({ onUploadSuccess, f
         <div className="bg-white border border-brand-border rounded-2xl p-6 shadow-sm">
           <div className="flex justify-between items-center mb-4 border-b border-brand-border/60 pb-3">
             <h3 className="text-xs font-bold text-brand-text-primary uppercase tracking-wider">
-              Currently Loaded NAV Files
+              Currently Loaded Files
             </h3>
             <button
-              onClick={() => router.push('/intern-portfolio')}
+              onClick={() => router.push('/strategies')}
               className="flex items-center gap-1.5 px-3.5 py-1.5 bg-brand-primary text-white text-xs font-bold rounded-lg hover:bg-brand-secondary transition-all shadow-sm"
             >
               <RefreshCw size={12} />
@@ -284,21 +231,6 @@ export const NavUploadZone: React.FC<NavUploadZoneProps> = ({ onUploadSuccess, f
                   <span className="px-2 py-0.5 bg-brand-accent/15 text-brand-accent border border-brand-accent/20 text-[10px] font-bold rounded">
                     {file.rowCount} rows
                   </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(file.name);
-                    }}
-                    disabled={deleting}
-                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                    title="Remove file"
-                  >
-                    {deleting ? (
-                      <RefreshCw size={14} className="animate-spin text-red-600" />
-                    ) : (
-                      <Trash2 size={14} />
-                    )}
-                  </button>
                 </div>
               </div>
             ))}
@@ -308,5 +240,3 @@ export const NavUploadZone: React.FC<NavUploadZoneProps> = ({ onUploadSuccess, f
     </div>
   );
 };
-
-export default NavUploadZone;

@@ -6,16 +6,23 @@ import { TopNav } from '../components/layout/TopNav';
 import { Footer } from '../components/layout/Footer';
 import { UploadZone } from '../components/upload/UploadZone';
 import { NavUploadZone } from '../components/upload/NavUploadZone';
+import { StrategyUploadZone } from '../components/upload/StrategyUploadZone';
+import { useStrategyData } from '../hooks/useStrategyData';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 
 export default function UploadPage() {
   const { files, navSeries, refetch } = usePortfolio();
+  const { dailyData: strategyData, refetch: refetchStrategy } = useStrategyData('3 Red Candle');
 
   const handleUploadSuccess = () => {
     // Immediate refetch
     refetch();
+    refetchStrategy();
     // Safety-net second refetch after 3s to catch propagation delays
-    setTimeout(() => refetch(), 3000);
+    setTimeout(() => {
+      refetch();
+      refetchStrategy();
+    }, 3000);
   };
 
   const navFiles = React.useMemo(() => {
@@ -28,6 +35,17 @@ export default function UploadPage() {
       rowCount: sorted.length,
     }];
   }, [navSeries]);
+
+  const strategyFiles = React.useMemo(() => {
+    if (!strategyData || strategyData.length === 0) return [];
+    const sorted = [...strategyData].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    return [{
+      name: '3_Red_Candle_DayWise_PnL.xlsx',
+      startDate: sorted[0].date as string,
+      endDate: sorted[sorted.length - 1].date as string,
+      rowCount: sorted.length,
+    }];
+  }, [strategyData]);
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] flex flex-col font-sans">
@@ -86,6 +104,26 @@ export default function UploadPage() {
             </CardContent>
           </Card>
 
+        </div>
+
+        {/* Strategies Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mt-6">
+          <Card className="border border-[#EDE0E6] shadow-none rounded-2xl bg-white">
+            <CardHeader className="p-5 pb-2">
+              <CardTitle className="text-sm font-bold text-[#1A0A10] uppercase tracking-wide">
+                3 Red Candle Strategy
+              </CardTitle>
+              <CardDescription className="text-xs text-[#9B8A92] font-semibold leading-relaxed">
+                Ingest daily P&amp;L strategy data from standard Algorest/Day-Wise P&amp;L exports.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-5 pt-0">
+              <StrategyUploadZone 
+                files={strategyFiles}
+                onUploadSuccess={handleUploadSuccess} 
+              />
+            </CardContent>
+          </Card>
         </div>
 
       </main>

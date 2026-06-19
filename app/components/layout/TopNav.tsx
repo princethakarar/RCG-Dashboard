@@ -37,6 +37,7 @@ export const TopNav: React.FC = () => {
     { name: 'Dashboard', path: '/' },
     { name: 'Rising Alpha Creator Portfolio 3x', path: '/intern-portfolio' },
     { name: 'Rising Alpha Creator Portfolio Net Asset', path: '/net-asset' },
+    { name: 'Strategies', path: '/strategies' },
     { name: 'Upload Data', path: '/upload' },
   ];
 

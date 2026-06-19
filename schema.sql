@@ -81,5 +81,34 @@ CREATE TABLE IF NOT EXISTS nav_forecast (
 ALTER TABLE nav_series ENABLE ROW LEVEL SECURITY;
 ALTER TABLE nav_forecast ENABLE ROW LEVEL SECURITY;
 
+-- Strategies Data
+CREATE TABLE IF NOT EXISTS strategies_data (
+  id              SERIAL PRIMARY KEY,
+  strategy_name   TEXT NOT NULL,
+  date            DATE NOT NULL,
+  day             TEXT,
+  trades_count    INTEGER,
+  net_pnl         NUMERIC(15, 4),
+  cumulative_pnl  NUMERIC(15, 4),
+  result          TEXT,
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (strategy_name, date)
+);
 
+CREATE TABLE IF NOT EXISTS strategies_summary (
+  strategy_name   TEXT PRIMARY KEY,
+  period          TEXT,
+  lot_size        TEXT,
+  win_days        INTEGER,
+  loss_days       INTEGER,
+  best_day_pnl    NUMERIC(15, 4),
+  worst_day_pnl   NUMERIC(15, 4),
+  avg_daily_pnl   NUMERIC(15, 4),
+  win_rate        NUMERIC(10, 6),
+  total_net_pnl   NUMERIC(15, 4),
+  total_trades    INTEGER,
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
 
+ALTER TABLE strategies_data ENABLE ROW LEVEL SECURITY;
+ALTER TABLE strategies_summary ENABLE ROW LEVEL SECURITY;

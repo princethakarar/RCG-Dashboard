@@ -3,14 +3,6 @@
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { UploadCloud, CheckCircle, AlertCircle, RefreshCw, FileSpreadsheet, Trash2, X } from 'lucide-react';
-import { ExcelCellValue } from '../../lib/excelParser';
-
-interface ParsedNavData {
-  series: { date: string; final_nav: number }[];
-  forecast: number;
-}
-
-
 
 interface NavFileDetails {
   name: string;
@@ -75,7 +67,7 @@ export const NavUploadZone: React.FC<NavUploadZoneProps> = ({ onUploadSuccess, f
 
       const worker = new Worker(new URL('../../workers/excel.worker.ts', import.meta.url), { type: 'module' });
       
-      const parsedData = await new Promise<any>((resolve, reject) => {
+      const parsedData = await new Promise<{ data3x: unknown, dataNet: unknown }>((resolve, reject) => {
         worker.onmessage = (event) => {
           if (event.data.success) {
             resolve(event.data.data);

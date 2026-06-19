@@ -4,9 +4,7 @@ import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { UploadCloud, CheckCircle, AlertCircle, FileSpreadsheet, RefreshCw, Trash2, X } from 'lucide-react';
 import { LoadedFile } from '../../lib/types';
-import {
-  ExcelCellValue
-} from '../../lib/excelParser';
+
 
 interface UploadZoneProps {
   onUploadSuccess: () => void;
@@ -64,7 +62,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUploadSuccess, files }
 
       const worker = new Worker(new URL('../../workers/excel.worker.ts', import.meta.url), { type: 'module' });
       
-      const parsedData = await new Promise<any>((resolve, reject) => {
+      const parsedData = await new Promise<{ sheet1Rows: unknown, sheet2Rows: unknown, sheet3Rows: unknown }>((resolve, reject) => {
         worker.onmessage = (event) => {
           if (event.data.success) {
             resolve(event.data.data);

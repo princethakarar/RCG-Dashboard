@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { put, del } from '@vercel/blob';
-import * as XLSX from 'xlsx';
+
 import { supabase } from '../../lib/supabase';
 import { invalidateCache, CACHE_KEYS } from '../../lib/redis';
 

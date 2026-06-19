@@ -2,8 +2,18 @@
 
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { UploadCloud, CheckCircle, AlertCircle, FileSpreadsheet, RefreshCw, Trash2 } from 'lucide-react';
+import { UploadCloud, CheckCircle, AlertCircle, FileSpreadsheet, RefreshCw, Trash2, X } from 'lucide-react';
 import { LoadedFile } from '../../lib/types';
+import * as XLSX from 'xlsx';
+import {
+  parseExcelDate,
+  parseFloatValue,
+  parseFloatValueOrNull,
+  isDateCellFilled,
+  isDataRow,
+  isCellValidAndFilled,
+  ExcelCellValue
+} from '../../lib/excelParser';
 
 interface UploadZoneProps {
   onUploadSuccess: () => void;
@@ -56,10 +66,119 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUploadSuccess, files }
     setError(null);
     setSuccessMsg(null);
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
+      const arrayBuffer = await file.arrayBuffer();
+      const wb = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+
+      const sheet1Name = wb.SheetNames.find(s => {
+        const norm = s.trim().toUpperCase();
+        return norm === 'RCG INTERS' || norm === 'RCG INTERNS';
+      }) || wb.SheetNames[0];
+
+      const sheet1Rows: Record<string, unknown>[] = [];
+      if (sheet1Name) {
+        const ws1 = wb.Sheets[sheet1Name];
+        const rawSheet1 = XLSX.utils.sheet_to_json(ws1, { header: 1 }) as ExcelCellValue[][];
+        for (let i = 1; i < rawSheet1.length; i++) {
+          const row = rawSheet1[i];
+          if (!row || !row[0]) continue;
+          const dateStr = parseExcelDate(row[0]);
+          if (!dateStr || !isDateCellFilled(row[0])) continue;
+
+          sheet1Rows.push({
+            date: dateStr,
+            net_mtm: parseFloatValue(row[1]),
+            running_pl: parseFloatValue(row[2]),
+            avg_deposit: parseFloatValue(row[15]),
+            net_margin: parseFloatValue(row[16]),
+          });
+        }
+      }
+
+      const sheet2Name = wb.SheetNames.find(s => {
+        const norm = s.trim().toUpperCase();
+        return norm === 'NIFTY VS RCG INTERS' || norm === 'NIFTY VS RCG INTERS 3 X';
+      });
+
+      const sheet2Rows: Record<string, unknown>[] = [];
+      if (sheet2Name) {
+        const ws2 = wb.Sheets[sheet2Name];
+        const rawSheet2 = XLSX.utils.sheet_to_json(ws2, { header: 1 }) as ExcelCellValue[][];
+        for (let i = 1; i < rawSheet2.length; i++) {
+          const row = rawSheet2[i];
+          if (!isDataRow(row)) break;
+          const dateStr = parseExcelDate(row[0]);
+          if (!dateStr) break;
+          if (
+            !isCellValidAndFilled(row[0]) ||
+            !isCellValidAndFilled(row[1]) ||
+            !isCellValidAndFilled(row[2]) ||
+            !isCellValidAndFilled(row[3], true) ||
+            !isCellValidAndFilled(row[4]) ||
+            !isCellValidAndFilled(row[5]) ||
+            !isCellValidAndFilled(row[6])
+          ) continue;
+
+          sheet2Rows.push({
+            date: dateStr,
+            net_mtm: parseFloatValue(row[1]),
+            roi_on_deposit: parseFloatValue(row[2]),
+            running_roi: parseFloatValue(row[3]),
+            nifty_daily: parseFloatValueOrNull(row[4]),
+            nifty_continue: parseFloatValueOrNull(row[5]),
+            daily_swing: parseFloatValueOrNull(row[6]),
+            high: parseFloatValueOrNull(row[7]),
+            low: parseFloatValueOrNull(row[8]),
+            close: parseFloatValueOrNull(row[9]),
+          });
+        }
+      }
+
+      const sheet3Name = wb.SheetNames.find(s => {
+        const norm = s.trim().toUpperCase();
+        return norm === 'NIFTY VS RCG INTERS NET AMOUNT';
+      });
+
+      const sheet3Rows: Record<string, unknown>[] = [];
+      if (sheet3Name) {
+        const ws3 = wb.Sheets[sheet3Name];
+        const rawSheet3 = XLSX.utils.sheet_to_json(ws3, { header: 1 }) as ExcelCellValue[][];
+        for (let i = 1; i < rawSheet3.length; i++) {
+          const row = rawSheet3[i];
+          if (!isDataRow(row)) break;
+          const dateStr = parseExcelDate(row[0]);
+          if (!dateStr) break;
+          if (
+            !isCellValidAndFilled(row[0]) ||
+            !isCellValidAndFilled(row[1]) ||
+            !isCellValidAndFilled(row[2], true) ||
+            !isCellValidAndFilled(row[3]) ||
+            !isCellValidAndFilled(row[4]) ||
+            !isCellValidAndFilled(row[5]) ||
+            !isCellValidAndFilled(row[6])
+          ) continue;
+
+          sheet3Rows.push({
+            date: dateStr,
+            net_mtm: parseFloatValue(row[1]),
+            running_roi: parseFloatValue(row[2]),
+            day_roi: parseFloatValue(row[3]),
+            nifty_daily: parseFloatValueOrNull(row[4]),
+            nifty_continue: parseFloatValueOrNull(row[5]),
+            daily_swing: parseFloatValueOrNull(row[6]),
+            high: parseFloatValueOrNull(row[7]),
+            low: parseFloatValueOrNull(row[8]),
+            close: parseFloatValueOrNull(row[9]),
+          });
+        }
+      }
+
+      const formData = new FormData();
+      if (file.size <= 4 * 1024 * 1024) {
+        formData.append('file', file);
+      }
+      formData.append('parsedData', JSON.stringify({ sheet1Rows, sheet2Rows, sheet3Rows, filename: file.name }));
+
       const res = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
@@ -178,16 +297,32 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUploadSuccess, files }
 
       {/* Success/Error Banners */}
       {successMsg && (
-        <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-xl flex items-center gap-2.5 text-xs font-semibold animate-fade-in shadow-sm">
-          <CheckCircle size={16} className="text-green-600 shrink-0" />
-          <span>{successMsg}</span>
+        <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-md flex items-start justify-between gap-2.5 text-xs font-semibold animate-fade-in shadow-sm font-sans">
+          <div className="flex items-start gap-2.5">
+            <CheckCircle size={16} className="text-green-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-sm mb-1">Success</p>
+              <p className="font-normal">{successMsg}</p>
+            </div>
+          </div>
+          <button onClick={() => setSuccessMsg(null)} className="text-green-600 hover:bg-green-100 p-1 rounded-md transition-colors shrink-0">
+            <X size={14} />
+          </button>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl flex items-center gap-2.5 text-xs font-semibold animate-fade-in shadow-sm">
-          <AlertCircle size={16} className="text-red-600 shrink-0" />
-          <span>{error}</span>
+        <div className="bg-[#C41E5A]/10 border border-[#C41E5A]/20 text-[#C41E5A] p-4 rounded-md flex items-start justify-between gap-2.5 text-xs font-semibold animate-fade-in shadow-sm font-sans">
+          <div className="flex items-start gap-2.5">
+            <AlertCircle size={16} className="text-[#C41E5A] shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-sm mb-1">Upload Failed</p>
+              <p className="font-normal">{error}</p>
+            </div>
+          </div>
+          <button onClick={() => setError(null)} className="text-[#C41E5A] hover:bg-[#C41E5A]/20 p-1 rounded-md transition-colors shrink-0">
+            <X size={14} />
+          </button>
         </div>
       )}
 

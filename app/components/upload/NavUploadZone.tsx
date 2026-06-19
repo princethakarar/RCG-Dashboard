@@ -3,6 +3,72 @@
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { UploadCloud, CheckCircle, AlertCircle, RefreshCw, FileSpreadsheet, Trash2, X } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { parseExcelDate, parseNavValue, ExcelCellValue } from '../../lib/excelParser';
+
+interface ParsedNavData {
+  series: { date: string; final_nav: number }[];
+  forecast: number;
+}
+
+function parseSheet(ws: XLSX.WorkSheet, sheetName: string): ParsedNavData {
+  const z3Cell = ws['Z3'];
+  if (!z3Cell || z3Cell.v === undefined || z3Cell.v === null) {
+    throw new Error(`Cell Z3 (last valid trading date) is missing or blank in sheet "${sheetName}".`);
+  }
+  const z3DateStr = parseExcelDate(z3Cell.v);
+  if (!z3DateStr) {
+    throw new Error(`Cell Z3 in sheet "${sheetName}" could not be parsed as a valid date.`);
+  }
+
+  const rawData = XLSX.utils.sheet_to_json(ws, { header: 1 }) as ExcelCellValue[][];
+  const series: { date: string; final_nav: number }[] = [];
+
+  let hasZ3DateInSheet = false;
+
+  for (let i = 2; i < rawData.length; i++) {
+    const row = rawData[i];
+    if (!row || row.length === 0) continue;
+
+    const dateStr = parseExcelDate(row[0]);
+    if (!dateStr) continue;
+
+    if (dateStr === z3DateStr) {
+      hasZ3DateInSheet = true;
+    }
+
+    if (dateStr <= z3DateStr) {
+      const finalNav = parseNavValue(row[16]);
+      if (finalNav === null) continue;
+
+      series.push({
+        date: dateStr,
+        final_nav: finalNav,
+      });
+    }
+  }
+
+  if (hasZ3DateInSheet) {
+    if (series.length === 0) {
+      throw new Error(`Validation failed for sheet "${sheetName}": series is empty but Z3 date "${z3DateStr}" exists in the sheet.`);
+    }
+    const lastRowDate = series[series.length - 1].date;
+    if (lastRowDate !== z3DateStr) {
+      throw new Error(`Validation failed for sheet "${sheetName}": Last parsed row date "${lastRowDate}" does not match the Z3 date "${z3DateStr}".`);
+    }
+  }
+
+  let forecast = 0;
+  const aa8Cell = ws['AA8'];
+  if (aa8Cell && aa8Cell.v !== undefined) {
+    const parsedForecast = parseFloat(String(aa8Cell.v));
+    if (isFinite(parsedForecast)) {
+      forecast = parsedForecast;
+    }
+  }
+
+  return { series, forecast };
+}
 
 interface NavFileDetails {
   name: string;
@@ -62,10 +128,27 @@ export const NavUploadZone: React.FC<NavUploadZoneProps> = ({ onUploadSuccess, f
     setError(null);
     setSuccessMsg(null);
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
+      const arrayBuffer = await file.arrayBuffer();
+      const wb = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+      
+      const rip3xSheetName = wb.SheetNames.find(s => s.trim().toUpperCase() === 'RIP 3X');
+      const ripNetSheetName = wb.SheetNames.find(s => s.trim().toUpperCase() === 'RIP NET');
+
+      if (!rip3xSheetName || !ripNetSheetName) {
+        throw new Error("This file doesn't match the expected RCG Alpha NAV format. Please check the sheet names and columns.");
+      }
+
+      const data3x = parseSheet(wb.Sheets[rip3xSheetName], rip3xSheetName);
+      const dataNet = parseSheet(wb.Sheets[ripNetSheetName], ripNetSheetName);
+
+      const formData = new FormData();
+      // Conditionally store raw excel if size < 4MB
+      if (file.size <= 4 * 1024 * 1024) {
+        formData.append('file', file);
+      }
+      formData.append('parsedData', JSON.stringify({ data3x, dataNet }));
+
       const res = await fetch('/api/upload/rcg-alpha-nav', {
         method: 'POST',
         body: formData,

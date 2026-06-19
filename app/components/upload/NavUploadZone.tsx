@@ -3,72 +3,14 @@
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { UploadCloud, CheckCircle, AlertCircle, RefreshCw, FileSpreadsheet, Trash2, X } from 'lucide-react';
-import * as XLSX from 'xlsx';
-import { parseExcelDate, parseNavValue, ExcelCellValue } from '../../lib/excelParser';
+import { ExcelCellValue } from '../../lib/excelParser';
 
 interface ParsedNavData {
   series: { date: string; final_nav: number }[];
   forecast: number;
 }
 
-function parseSheet(ws: XLSX.WorkSheet, sheetName: string): ParsedNavData {
-  const z3Cell = ws['Z3'];
-  if (!z3Cell || z3Cell.v === undefined || z3Cell.v === null) {
-    throw new Error(`Cell Z3 (last valid trading date) is missing or blank in sheet "${sheetName}".`);
-  }
-  const z3DateStr = parseExcelDate(z3Cell.v);
-  if (!z3DateStr) {
-    throw new Error(`Cell Z3 in sheet "${sheetName}" could not be parsed as a valid date.`);
-  }
 
-  const rawData = XLSX.utils.sheet_to_json(ws, { header: 1 }) as ExcelCellValue[][];
-  const series: { date: string; final_nav: number }[] = [];
-
-  let hasZ3DateInSheet = false;
-
-  for (let i = 2; i < rawData.length; i++) {
-    const row = rawData[i];
-    if (!row || row.length === 0) continue;
-
-    const dateStr = parseExcelDate(row[0]);
-    if (!dateStr) continue;
-
-    if (dateStr === z3DateStr) {
-      hasZ3DateInSheet = true;
-    }
-
-    if (dateStr <= z3DateStr) {
-      const finalNav = parseNavValue(row[16]);
-      if (finalNav === null) continue;
-
-      series.push({
-        date: dateStr,
-        final_nav: finalNav,
-      });
-    }
-  }
-
-  if (hasZ3DateInSheet) {
-    if (series.length === 0) {
-      throw new Error(`Validation failed for sheet "${sheetName}": series is empty but Z3 date "${z3DateStr}" exists in the sheet.`);
-    }
-    const lastRowDate = series[series.length - 1].date;
-    if (lastRowDate !== z3DateStr) {
-      throw new Error(`Validation failed for sheet "${sheetName}": Last parsed row date "${lastRowDate}" does not match the Z3 date "${z3DateStr}".`);
-    }
-  }
-
-  let forecast = 0;
-  const aa8Cell = ws['AA8'];
-  if (aa8Cell && aa8Cell.v !== undefined) {
-    const parsedForecast = parseFloat(String(aa8Cell.v));
-    if (isFinite(parsedForecast)) {
-      forecast = parsedForecast;
-    }
-  }
-
-  return { series, forecast };
-}
 
 interface NavFileDetails {
   name: string;
@@ -130,17 +72,28 @@ export const NavUploadZone: React.FC<NavUploadZoneProps> = ({ onUploadSuccess, f
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const wb = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+
+      const worker = new Worker(new URL('../../workers/excel.worker.ts', import.meta.url), { type: 'module' });
       
-      const rip3xSheetName = wb.SheetNames.find(s => s.trim().toUpperCase() === 'RIP 3X');
-      const ripNetSheetName = wb.SheetNames.find(s => s.trim().toUpperCase() === 'RIP NET');
+      const parsedData = await new Promise<any>((resolve, reject) => {
+        worker.onmessage = (event) => {
+          if (event.data.success) {
+            resolve(event.data.data);
+          } else {
+            reject(new Error(event.data.error || 'Worker parsing failed'));
+          }
+          worker.terminate();
+        };
 
-      if (!rip3xSheetName || !ripNetSheetName) {
-        throw new Error("This file doesn't match the expected RCG Alpha NAV format. Please check the sheet names and columns.");
-      }
+        worker.onerror = (error) => {
+          reject(new Error('Worker encountered an error: ' + error.message));
+          worker.terminate();
+        };
 
-      const data3x = parseSheet(wb.Sheets[rip3xSheetName], rip3xSheetName);
-      const dataNet = parseSheet(wb.Sheets[ripNetSheetName], ripNetSheetName);
+        worker.postMessage({ type: 'parse_nav', arrayBuffer }, [arrayBuffer]);
+      });
+
+      const { data3x, dataNet } = parsedData;
 
       const formData = new FormData();
       // Conditionally store raw excel if size < 4MB

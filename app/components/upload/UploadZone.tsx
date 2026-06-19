@@ -4,14 +4,7 @@ import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { UploadCloud, CheckCircle, AlertCircle, FileSpreadsheet, RefreshCw, Trash2, X } from 'lucide-react';
 import { LoadedFile } from '../../lib/types';
-import * as XLSX from 'xlsx';
 import {
-  parseExcelDate,
-  parseFloatValue,
-  parseFloatValueOrNull,
-  isDateCellFilled,
-  isDataRow,
-  isCellValidAndFilled,
   ExcelCellValue
 } from '../../lib/excelParser';
 
@@ -68,110 +61,28 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUploadSuccess, files }
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const wb = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
 
-      const sheet1Name = wb.SheetNames.find(s => {
-        const norm = s.trim().toUpperCase();
-        return norm === 'RCG INTERS' || norm === 'RCG INTERNS';
-      }) || wb.SheetNames[0];
+      const worker = new Worker(new URL('../../workers/excel.worker.ts', import.meta.url), { type: 'module' });
+      
+      const parsedData = await new Promise<any>((resolve, reject) => {
+        worker.onmessage = (event) => {
+          if (event.data.success) {
+            resolve(event.data.data);
+          } else {
+            reject(new Error(event.data.error || 'Worker parsing failed'));
+          }
+          worker.terminate();
+        };
 
-      const sheet1Rows: Record<string, unknown>[] = [];
-      if (sheet1Name) {
-        const ws1 = wb.Sheets[sheet1Name];
-        const rawSheet1 = XLSX.utils.sheet_to_json(ws1, { header: 1 }) as ExcelCellValue[][];
-        for (let i = 1; i < rawSheet1.length; i++) {
-          const row = rawSheet1[i];
-          if (!row || !row[0]) continue;
-          const dateStr = parseExcelDate(row[0]);
-          if (!dateStr || !isDateCellFilled(row[0])) continue;
+        worker.onerror = (error) => {
+          reject(new Error('Worker encountered an error: ' + error.message));
+          worker.terminate();
+        };
 
-          sheet1Rows.push({
-            date: dateStr,
-            net_mtm: parseFloatValue(row[1]),
-            running_pl: parseFloatValue(row[2]),
-            avg_deposit: parseFloatValue(row[15]),
-            net_margin: parseFloatValue(row[16]),
-          });
-        }
-      }
-
-      const sheet2Name = wb.SheetNames.find(s => {
-        const norm = s.trim().toUpperCase();
-        return norm === 'NIFTY VS RCG INTERS' || norm === 'NIFTY VS RCG INTERS 3 X';
+        worker.postMessage({ type: 'parse_dll', arrayBuffer }, [arrayBuffer]);
       });
 
-      const sheet2Rows: Record<string, unknown>[] = [];
-      if (sheet2Name) {
-        const ws2 = wb.Sheets[sheet2Name];
-        const rawSheet2 = XLSX.utils.sheet_to_json(ws2, { header: 1 }) as ExcelCellValue[][];
-        for (let i = 1; i < rawSheet2.length; i++) {
-          const row = rawSheet2[i];
-          if (!isDataRow(row)) break;
-          const dateStr = parseExcelDate(row[0]);
-          if (!dateStr) break;
-          if (
-            !isCellValidAndFilled(row[0]) ||
-            !isCellValidAndFilled(row[1]) ||
-            !isCellValidAndFilled(row[2]) ||
-            !isCellValidAndFilled(row[3], true) ||
-            !isCellValidAndFilled(row[4]) ||
-            !isCellValidAndFilled(row[5]) ||
-            !isCellValidAndFilled(row[6])
-          ) continue;
-
-          sheet2Rows.push({
-            date: dateStr,
-            net_mtm: parseFloatValue(row[1]),
-            roi_on_deposit: parseFloatValue(row[2]),
-            running_roi: parseFloatValue(row[3]),
-            nifty_daily: parseFloatValueOrNull(row[4]),
-            nifty_continue: parseFloatValueOrNull(row[5]),
-            daily_swing: parseFloatValueOrNull(row[6]),
-            high: parseFloatValueOrNull(row[7]),
-            low: parseFloatValueOrNull(row[8]),
-            close: parseFloatValueOrNull(row[9]),
-          });
-        }
-      }
-
-      const sheet3Name = wb.SheetNames.find(s => {
-        const norm = s.trim().toUpperCase();
-        return norm === 'NIFTY VS RCG INTERS NET AMOUNT';
-      });
-
-      const sheet3Rows: Record<string, unknown>[] = [];
-      if (sheet3Name) {
-        const ws3 = wb.Sheets[sheet3Name];
-        const rawSheet3 = XLSX.utils.sheet_to_json(ws3, { header: 1 }) as ExcelCellValue[][];
-        for (let i = 1; i < rawSheet3.length; i++) {
-          const row = rawSheet3[i];
-          if (!isDataRow(row)) break;
-          const dateStr = parseExcelDate(row[0]);
-          if (!dateStr) break;
-          if (
-            !isCellValidAndFilled(row[0]) ||
-            !isCellValidAndFilled(row[1]) ||
-            !isCellValidAndFilled(row[2], true) ||
-            !isCellValidAndFilled(row[3]) ||
-            !isCellValidAndFilled(row[4]) ||
-            !isCellValidAndFilled(row[5]) ||
-            !isCellValidAndFilled(row[6])
-          ) continue;
-
-          sheet3Rows.push({
-            date: dateStr,
-            net_mtm: parseFloatValue(row[1]),
-            running_roi: parseFloatValue(row[2]),
-            day_roi: parseFloatValue(row[3]),
-            nifty_daily: parseFloatValueOrNull(row[4]),
-            nifty_continue: parseFloatValueOrNull(row[5]),
-            daily_swing: parseFloatValueOrNull(row[6]),
-            high: parseFloatValueOrNull(row[7]),
-            low: parseFloatValueOrNull(row[8]),
-            close: parseFloatValueOrNull(row[9]),
-          });
-        }
-      }
+      const { sheet1Rows, sheet2Rows, sheet3Rows } = parsedData;
 
       const formData = new FormData();
       if (file.size <= 4 * 1024 * 1024) {

@@ -45,7 +45,7 @@ export const StrategyStickyNav: React.FC<StrategyStickyNavProps> = ({ sections =
       sectionElements.forEach((el) => observer.unobserve(el));
       observer.disconnect();
     };
-  }, []);
+  }, [sections]);
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);

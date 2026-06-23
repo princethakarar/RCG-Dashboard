@@ -141,10 +141,10 @@ function StrategySection({ strategyName }: { strategyName: string }) {
 }
 
 export default function StrategiesPage() {
-  const navSections = STRATEGIES.map(s => ({
+  const navSections = React.useMemo(() => STRATEGIES.map(s => ({
     id: `strategy-${s.replace(/\s+/g, '-')}`,
     label: s
-  }));
+  })), []);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">

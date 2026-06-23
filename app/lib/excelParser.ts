@@ -24,13 +24,13 @@ export function parseExcelDate(cellValue: unknown): string | null {
     return `${y}-${m}-${d}`;
   }
   if (typeof cellValue === 'string') {
-    let s = cellValue.trim().split(' ')[0];
+    const s = cellValue.trim().split(' ')[0];
 
     // Check for DD-MM-YYYY or DD/MM/YYYY
     const dmyMatch = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
     if (dmyMatch) {
-      let d = dmyMatch[1].padStart(2, '0');
-      let m = dmyMatch[2].padStart(2, '0');
+      const d = dmyMatch[1].padStart(2, '0');
+      const m = dmyMatch[2].padStart(2, '0');
       let y = dmyMatch[3];
       if (y.length === 2) y = '20' + y;
       return `${y}-${m}-${d}`;

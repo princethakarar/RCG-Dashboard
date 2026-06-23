@@ -2,17 +2,21 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 
-const SECTIONS = [
+const DEFAULT_SECTIONS = [
   { id: 'section-stats', label: 'Stats' },
   { id: 'section-performance', label: 'Performance' },
 ];
 
-export const StrategyStickyNav: React.FC = () => {
-  const [activeId, setActiveId] = useState(SECTIONS[0].id);
+interface StrategyStickyNavProps {
+  sections?: { id: string; label: string }[];
+}
+
+export const StrategyStickyNav: React.FC<StrategyStickyNavProps> = ({ sections = DEFAULT_SECTIONS }) => {
+  const [activeId, setActiveId] = useState(sections[0]?.id || '');
   const isScrollingRef = useRef(false);
 
   useEffect(() => {
-    const sectionElements = SECTIONS.map(s => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
+    const sectionElements = sections.map(s => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
     const intersectingMap = new Map<string, boolean>();
 
     const observer = new IntersectionObserver(
@@ -23,7 +27,7 @@ export const StrategyStickyNav: React.FC = () => {
           intersectingMap.set(entry.target.id, entry.isIntersecting);
         });
 
-        const active = SECTIONS.find((s) => intersectingMap.get(s.id))?.id;
+        const active = sections.find((s) => intersectingMap.get(s.id))?.id;
         if (active) {
           setActiveId(active);
         }
@@ -60,7 +64,7 @@ export const StrategyStickyNav: React.FC = () => {
   return (
     <nav className="floating-nav-wrapper no-print" aria-label="Strategy navigation">
       <div className="floating-nav">
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <button
             key={section.id}
             type="button"

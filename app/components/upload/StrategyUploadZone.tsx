@@ -14,9 +14,10 @@ interface StrategyFileDetails {
 interface StrategyUploadZoneProps {
   onUploadSuccess: () => void;
   files: StrategyFileDetails[];
+  strategyName: string;
 }
 
-export const StrategyUploadZone: React.FC<StrategyUploadZoneProps> = ({ onUploadSuccess, files }) => {
+export const StrategyUploadZone: React.FC<StrategyUploadZoneProps> = ({ onUploadSuccess, files, strategyName }) => {
   const router = useRouter();
   const [dragActive, setDragActive] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
@@ -81,7 +82,7 @@ export const StrategyUploadZone: React.FC<StrategyUploadZoneProps> = ({ onUpload
           worker.terminate();
         };
 
-        worker.postMessage({ type: 'parse_strategy', strategyName: '3 Red Candle', arrayBuffer }, [arrayBuffer]);
+        worker.postMessage({ type: 'parse_strategy', strategyName, arrayBuffer }, [arrayBuffer]);
       });
 
       const formData = new FormData();
@@ -89,6 +90,7 @@ export const StrategyUploadZone: React.FC<StrategyUploadZoneProps> = ({ onUpload
         formData.append('file', file);
       }
       formData.append('parsedData', JSON.stringify(parsedData));
+      formData.append('strategy', strategyName);
 
       const res = await fetch('/api/upload/strategy', {
         method: 'POST',
@@ -100,7 +102,7 @@ export const StrategyUploadZone: React.FC<StrategyUploadZoneProps> = ({ onUpload
         throw new Error(data.error || 'Upload failed');
       }
 
-      setSuccessMsg(`Successfully uploaded 3 Red Candle Data`);
+      setSuccessMsg(`Successfully uploaded ${strategyName} Data`);
       onUploadSuccess();
       router.refresh();
       

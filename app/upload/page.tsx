@@ -13,15 +13,18 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../co
 export default function UploadPage() {
   const { files, navSeries, refetch } = usePortfolio();
   const { dailyData: strategyData, refetch: refetchStrategy } = useStrategyData('3 Red Candle');
+  const { dailyData: soldierData, refetch: refetchSoldier } = useStrategyData('Soldier Pattern');
 
   const handleUploadSuccess = () => {
     // Immediate refetch
     refetch();
     refetchStrategy();
+    refetchSoldier();
     // Safety-net second refetch after 3s to catch propagation delays
     setTimeout(() => {
       refetch();
       refetchStrategy();
+      refetchSoldier();
     }, 3000);
   };
 
@@ -46,6 +49,17 @@ export default function UploadPage() {
       rowCount: sorted.length,
     }];
   }, [strategyData]);
+
+  const soldierFiles = React.useMemo(() => {
+    if (!soldierData || soldierData.length === 0) return [];
+    const sorted = [...soldierData].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    return [{
+      name: 'Soldier_Pattern_DayWise_PnL.xlsx',
+      startDate: sorted[0].date as string,
+      endDate: sorted[sorted.length - 1].date as string,
+      rowCount: sorted.length,
+    }];
+  }, [soldierData]);
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] flex flex-col font-sans">
@@ -119,7 +133,26 @@ export default function UploadPage() {
             </CardHeader>
             <CardContent className="p-5 pt-0">
               <StrategyUploadZone 
+                strategyName="3 Red Candle"
                 files={strategyFiles}
+                onUploadSuccess={handleUploadSuccess} 
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="border border-[#EDE0E6] shadow-none rounded-2xl bg-white">
+            <CardHeader className="p-5 pb-2">
+              <CardTitle className="text-sm font-bold text-[#1A0A10] uppercase tracking-wide">
+                Soldier Pattern Strategy
+              </CardTitle>
+              <CardDescription className="text-xs text-[#9B8A92] font-semibold leading-relaxed">
+                Ingest daily P&amp;L strategy data for Soldier Pattern.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-5 pt-0">
+              <StrategyUploadZone 
+                strategyName="Soldier Pattern"
+                files={soldierFiles}
                 onUploadSuccess={handleUploadSuccess} 
               />
             </CardContent>

@@ -12,13 +12,16 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const parsedDataStr = formData.get('parsedData') as string;
+    const strategyName = formData.get('strategy') as string;
 
     if (!parsedDataStr) {
       return NextResponse.json({ error: 'Missing parsed data in request body' }, { status: 400 });
     }
+    if (!strategyName) {
+      return NextResponse.json({ error: 'Missing strategy identifier in request body' }, { status: 400 });
+    }
 
     const { strategyMeta, dailyData, totals, summaryStats } = JSON.parse(parsedDataStr) as Record<string, unknown> & { strategyMeta: Record<string, string>, dailyData: Record<string, unknown>[], totals: Record<string, number>, summaryStats: Record<string, number> };
-    const strategyName = '3 Red Candle'; // Currently hardcoded for the initial requirement
 
     // Optional backup to Vercel Blob if file is small enough
     if (file) {

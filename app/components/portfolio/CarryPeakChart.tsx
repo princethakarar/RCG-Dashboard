@@ -37,19 +37,10 @@ export const CarryPeakChart: React.FC<CarryPeakChartProps> = ({ tradingData, den
 
   const formatPercent = (val: number) => `${val.toFixed(2)}%`;
   const formatYAxisTick = (val: number) => `${Math.round(val)}%`;
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(val);
-  };
 
   const CustomTooltip = ({ active, payload }: { active?: boolean, payload?: Record<string, unknown>[] }) => {
     if (active && payload && payload.length) {
       const dataPoint = payload[0].payload as Record<string, unknown>;
-      const denomLabel = dashboardType === '3x' ? 'Avg Deposit' : 'Net Margin';
 
       return (
         <div className="bg-white p-2.5 px-3.5 border border-[#EDE0E6] rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.06)] font-sans text-xs">
@@ -62,22 +53,6 @@ export const CarryPeakChart: React.FC<CarryPeakChartProps> = ({ tradingData, den
               </span>
               <span className="font-bold tabular-nums text-[#1A0A10]">
                 {formatPercent(Number(dataPoint.ratio))}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-8">
-              <span className="flex items-center gap-1.5 font-semibold text-[#9B8A92]">
-                Carry + Peak:
-              </span>
-              <span className="font-bold tabular-nums text-[#9B8A92]">
-                {formatCurrency(Number(dataPoint.carryPeak))}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-8">
-              <span className="flex items-center gap-1.5 font-semibold text-[#9B8A92]">
-                {denomLabel}:
-              </span>
-              <span className="font-bold tabular-nums text-[#9B8A92]">
-                {formatCurrency(Number(dataPoint.denominator))}
               </span>
             </div>
           </div>

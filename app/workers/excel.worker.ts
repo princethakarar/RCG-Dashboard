@@ -3,9 +3,7 @@ import {
   parseExcelDate,
   parseFloatValue,
   parseFloatValueOrNull,
-  isDateCellFilled,
-  isDataRow,
-  isCellValidAndFilled,
+  isValidDataRow,
   parseNavValue,
   ExcelCellValue
 } from '../lib/excelParser';
@@ -28,18 +26,20 @@ self.addEventListener('message', (event) => {
         const rawSheet1 = XLSX.utils.sheet_to_json(ws1, { header: 1 }) as ExcelCellValue[][];
         for (let i = 1; i < rawSheet1.length; i++) {
           const row = rawSheet1[i];
-          if (!row || !row[0]) continue;
+          if (!isValidDataRow(row, [2, 3, 4, 6, 12])) break;
           const dateStr = parseExcelDate(row[0]);
-          if (!dateStr || !isDateCellFilled(row[0])) continue;
+          if (!dateStr) break;
 
           sheet1Rows.push({
             date: dateStr,
             net_mtm: parseFloatValue(row[1]),
             running_pl: parseFloatValue(row[2]),
+            carry_peak: parseFloatValue(row[14]),
             avg_deposit: parseFloatValue(row[15]),
             net_margin: parseFloatValue(row[16]),
           });
         }
+        console.log(`Extracted ${sheet1Rows.length} valid rows out of ${rawSheet1.length} total rows in sheet RCG INTERS`);
       }
 
       const sheet2Name = wb.SheetNames.find(s => {
@@ -53,18 +53,9 @@ self.addEventListener('message', (event) => {
         const rawSheet2 = XLSX.utils.sheet_to_json(ws2, { header: 1 }) as ExcelCellValue[][];
         for (let i = 1; i < rawSheet2.length; i++) {
           const row = rawSheet2[i];
-          if (!isDataRow(row)) break;
+          if (!isValidDataRow(row, [4, 5, 6])) break;
           const dateStr = parseExcelDate(row[0]);
           if (!dateStr) break;
-          if (
-            !isCellValidAndFilled(row[0]) ||
-            !isCellValidAndFilled(row[1]) ||
-            !isCellValidAndFilled(row[2]) ||
-            !isCellValidAndFilled(row[3], true) ||
-            !isCellValidAndFilled(row[4]) ||
-            !isCellValidAndFilled(row[5]) ||
-            !isCellValidAndFilled(row[6])
-          ) continue;
 
           sheet2Rows.push({
             date: dateStr,
@@ -79,6 +70,7 @@ self.addEventListener('message', (event) => {
             close: parseFloatValueOrNull(row[9]),
           });
         }
+        console.log(`Extracted ${sheet2Rows.length} valid rows out of ${rawSheet2.length} total rows in sheet NIFTY VS RCG INTERS`);
       }
 
       const sheet3Name = wb.SheetNames.find(s => {
@@ -92,18 +84,9 @@ self.addEventListener('message', (event) => {
         const rawSheet3 = XLSX.utils.sheet_to_json(ws3, { header: 1 }) as ExcelCellValue[][];
         for (let i = 1; i < rawSheet3.length; i++) {
           const row = rawSheet3[i];
-          if (!isDataRow(row)) break;
+          if (!isValidDataRow(row, [4, 5, 6])) break;
           const dateStr = parseExcelDate(row[0]);
           if (!dateStr) break;
-          if (
-            !isCellValidAndFilled(row[0]) ||
-            !isCellValidAndFilled(row[1]) ||
-            !isCellValidAndFilled(row[2], true) ||
-            !isCellValidAndFilled(row[3]) ||
-            !isCellValidAndFilled(row[4]) ||
-            !isCellValidAndFilled(row[5]) ||
-            !isCellValidAndFilled(row[6])
-          ) continue;
 
           sheet3Rows.push({
             date: dateStr,
@@ -118,6 +101,7 @@ self.addEventListener('message', (event) => {
             close: parseFloatValueOrNull(row[9]),
           });
         }
+        console.log(`Extracted ${sheet3Rows.length} valid rows out of ${rawSheet3.length} total rows in sheet NIFTY VS RCG INTERS NET AMOUNT`);
       }
 
       self.postMessage({

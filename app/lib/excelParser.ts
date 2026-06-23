@@ -97,30 +97,32 @@ export function isDateCellFilled(val: unknown): boolean {
   return false;
 }
 
-export function isMtmCellFilled(val: unknown): boolean {
-  if (val === null || val === undefined) return false;
-  if (typeof val === 'number') return true;
-  if (typeof val === 'string') return val.trim() !== '';
-  return false;
-}
-
-export function isDataRow(row: ExcelCellValue[]): boolean {
+export function isValidDataRow(row: ExcelCellValue[], coreColumns: number[]): boolean {
   if (!row || row.length === 0) return false;
-  return isDateCellFilled(row[0]) && isMtmCellFilled(row[1]);
-}
 
-export function isCellValidAndFilled(val: unknown, checkZero = false): boolean {
-  if (val === null || val === undefined) return false;
-  if (typeof val === 'string') {
-    const s = val.trim();
-    if (s === '') return false;
-    if (s.includes('#')) return false;
-    if (s === '-100' || s === '-100%') return false;
+  // 1. DATE column blank check
+  if (!isDateCellFilled(row[0])) return false;
+
+  // 2. Core columns check
+  for (const colIdx of coreColumns) {
+    const val = row[colIdx];
+    
+    // Blank / null
+    if (val === null || val === undefined) return false;
+    
+    if (typeof val === 'string') {
+      const s = val.trim();
+      if (s === '') return false;
+      
+      // Error strings check
+      // Some excel parsers return errors starting with '#' like #DIV/0!, #VALUE!, #N/A, #REF!, #NAME?, #NUM!, #NULL!
+      if (s.startsWith('#')) return false;
+    }
+    
+    if (typeof val === 'number') {
+      if (isNaN(val) || !isFinite(val)) return false;
+    }
   }
-  if (typeof val === 'number') {
-    if (isNaN(val) || !isFinite(val)) return false;
-    if (val === -100) return false;
-    if (checkZero && val === 0) return false;
-  }
+
   return true;
 }

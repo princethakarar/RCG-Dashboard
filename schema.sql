@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS trading_data (
   date            DATE NOT NULL UNIQUE,
   net_mtm         NUMERIC(15, 4),
   running_pl      NUMERIC(15, 4),
+  carry_peak      NUMERIC(15, 4),
   avg_deposit     NUMERIC(15, 4),
   net_margin      NUMERIC(15, 4),
   created_at      TIMESTAMPTZ DEFAULT NOW(),

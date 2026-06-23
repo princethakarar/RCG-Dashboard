@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { PortfolioRow, PortfolioMetrics, LoadedFile } from '../lib/types';
+import { PortfolioRow, PortfolioMetrics, LoadedFile, TradingDataRow } from '../lib/types';
 import { computeMetrics, computeNetAssetMetrics } from '../lib/calculations';
 
 export interface NavDataPoint {
@@ -12,6 +12,7 @@ export interface NavDataPoint {
 interface PortfolioContextType {
   data: PortfolioRow[];
   netAssetData: PortfolioRow[];
+  tradingData: TradingDataRow[];
   navSeries: NavDataPoint[];
   netAssetNavSeries: NavDataPoint[];
   files: LoadedFile[];
@@ -28,6 +29,7 @@ const PortfolioContext = createContext<PortfolioContextType | undefined>(undefin
 export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [data, setData] = useState<PortfolioRow[]>([]);
   const [netAssetData, setNetAssetData] = useState<PortfolioRow[]>([]);
+  const [tradingData, setTradingData] = useState<TradingDataRow[]>([]);
   const [navSeries, setNavSeries] = useState<NavDataPoint[]>([]);
   const [netAssetNavSeries, setNetAssetNavSeries] = useState<NavDataPoint[]>([]);
   const [files, setFiles] = useState<LoadedFile[]>([]);
@@ -53,6 +55,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       setData(json.data || []);
       setNetAssetData(json.netAssetData || []);
+      setTradingData(json.tradingData || []);
       setNavSeries(json.nav3xSeries || []);
       setNetAssetNavSeries(json.navNetSeries || []);
       setFiles(json.files || []);
@@ -94,6 +97,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const value: PortfolioContextType = {
     data,
     netAssetData,
+    tradingData,
     navSeries,
     netAssetNavSeries,
     files,

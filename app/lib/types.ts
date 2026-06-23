@@ -1,3 +1,12 @@
+export interface TradingDataRow {
+  date: string;
+  net_mtm: number;
+  running_pl: number;
+  carry_peak: number;
+  avg_deposit: number;
+  net_margin: number;
+}
+
 export interface PortfolioRow {
   date: string;                  // 'YYYY-MM-DD'
   netMTM: number;                // ₹ Daily MTM

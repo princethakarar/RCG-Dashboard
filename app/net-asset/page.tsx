@@ -19,12 +19,13 @@ import { PeriodicReturnsCards } from '../components/portfolio/PeriodicReturnsCar
 import { ReturnDistribution } from '../components/portfolio/ReturnDistribution';
 import { SwingComparisonChart } from '../components/portfolio/SwingComparisonChart';
 import { NAVChart } from '../components/portfolio/NAVChart';
+import { CarryPeakChart } from '../components/portfolio/CarryPeakChart';
 import { FolderOpen, ArrowRight, ShieldAlert, Loader } from 'lucide-react';
 import Link from 'next/link';
 import { formatDate } from '../lib/formatters';
 
 export default function NetAssetPortfolioPage() {
-  const { netAssetData: data, netAssetNavSeries: navSeries, netAssetMetrics: metrics, loading, error, refetch } = usePortfolio();
+  const { netAssetData: data, tradingData, netAssetNavSeries: navSeries, netAssetMetrics: metrics, loading, error, refetch } = usePortfolio();
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -109,6 +110,13 @@ export default function NetAssetPortfolioPage() {
             {navSeries && navSeries.length > 0 && (
               <div className="scroll-mt-20 animate-fade-in" data-chart-card data-chart-full>
                 <NAVChart series={navSeries} />
+              </div>
+            )}
+
+            {/* Carry + Peak % Chart */}
+            {tradingData && tradingData.length > 0 && (
+              <div className="scroll-mt-20 animate-fade-in" data-chart-card data-chart-full>
+                <CarryPeakChart tradingData={tradingData} denominatorKey="net_margin" dashboardType="net" />
               </div>
             )}
 

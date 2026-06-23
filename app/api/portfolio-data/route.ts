@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import { supabase } from '../../lib/supabase';
 import { getCachedData, setCachedData, CACHE_KEYS } from '../../lib/redis';
-import { PortfolioRow } from '../../lib/types';
+import { PortfolioRow, TradingDataRow } from '../../lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,11 +70,13 @@ function mapNetAssetRow(row: PortfolioNetAssetRow): PortfolioRow {
 async function fetchFromSupabase(): Promise<{
   data3x: PortfolioRow[];
   dataNetAsset: PortfolioRow[];
+  tradingData: TradingDataRow[];
 }> {
-  // Fetch both tables in parallel
-  const [res3x, resNet] = await Promise.all([
+  // Fetch tables in parallel
+  const [res3x, resNet, resTrading] = await Promise.all([
     supabase.from('portfolio_3x').select('*').order('date', { ascending: true }),
     supabase.from('portfolio_net_asset').select('*').order('date', { ascending: true }),
+    supabase.from('trading_data').select('*').order('date', { ascending: true }),
   ]);
 
   if (res3x.error) {
@@ -85,13 +87,19 @@ async function fetchFromSupabase(): Promise<{
     console.error('[portfolio-data] Supabase portfolio_net_asset error:', resNet.error);
     throw new Error(`Database error (portfolio_net_asset): ${resNet.error.message}`);
   }
+  if (resTrading.error) {
+    console.error('[portfolio-data] Supabase trading_data error:', resTrading.error);
+    throw new Error(`Database error (trading_data): ${resTrading.error.message}`);
+  }
 
   const data3x = (res3x.data as Portfolio3xRow[]).map(map3xRow);
   const dataNetAsset = (resNet.data as PortfolioNetAssetRow[]).map(mapNetAssetRow);
+  const tradingData = resTrading.data as TradingDataRow[];
 
   return {
     data3x,
     dataNetAsset,
+    tradingData,
   };
 }
 
@@ -140,6 +148,7 @@ export async function GET() {
     const [
       cached3x,
       cachedNet,
+      cachedTrading,
       cachedNav3xSeries,
       cachedNavNetSeries,
       cachedNav3xForecast,
@@ -147,6 +156,7 @@ export async function GET() {
     ] = await Promise.all([
       getCachedData<PortfolioRow[]>(CACHE_KEYS.DASHBOARD_3X),
       getCachedData<PortfolioRow[]>(CACHE_KEYS.DASHBOARD_NET_ASSET),
+      getCachedData<TradingDataRow[]>('dashboard:trading_data'),
       getCachedData<NavDataPoint[]>('nav:3x:series'),
       getCachedData<NavDataPoint[]>('nav:net:series'),
       getCachedData<string>('nav:3x:forecast'),
@@ -177,14 +187,16 @@ export async function GET() {
     }
 
     // If ALL cache keys hit, return immediately
-    if (cached3x && cachedNet && nav3xSeries && navNetSeries && nav3xForecast !== null && navNetForecast !== null) {
+    if (cached3x && cachedNet && cachedTrading && nav3xSeries && navNetSeries && nav3xForecast !== null && navNetForecast !== null) {
       console.log('[portfolio-data] Cache HIT for all data — returning cached data');
+      console.log('[portfolio-data] Returning cachedTrading length:', cachedTrading ? cachedTrading.length : 0);
       const fileInfo = buildFileInfo(cached3x);
 
       return NextResponse.json(
         {
           data: cached3x,
           netAssetData: cachedNet,
+          tradingData: cachedTrading,
           files: fileInfo,
           annualizedForecast3x: nav3xForecast,
           annualizedForecastNetAsset: navNetForecast,
@@ -215,7 +227,7 @@ export async function GET() {
       navNetForecast !== null ? navNetForecast : fetchNavForecast('net'),
     ]);
 
-    const { data3x, dataNetAsset } = supabaseData;
+    const { data3x, dataNetAsset, tradingData } = supabaseData;
 
     // ──────────────────────────────────────────
     // Step 3: Populate Redis caches where missing
@@ -227,6 +239,9 @@ export async function GET() {
     }
     if (!cachedNet) {
       promises.push(setCachedData(CACHE_KEYS.DASHBOARD_NET_ASSET, dataNetAsset));
+    }
+    if (!cachedTrading) {
+      promises.push(setCachedData('dashboard:trading_data', tradingData));
     }
     if (!nav3xSeries) {
       promises.push(setCachedData('nav:3x:series', dbNav3xSeries));
@@ -248,10 +263,13 @@ export async function GET() {
 
     const fileInfo = buildFileInfo(data3x);
 
+    console.log('[portfolio-data] Returning tradingData length:', tradingData ? tradingData.length : 0);
+
     return NextResponse.json(
       {
         data: data3x,
         netAssetData: dataNetAsset,
+        tradingData: tradingData,
         files: fileInfo,
         annualizedForecast3x: dbNav3xForecast,
         annualizedForecastNetAsset: dbNavNetForecast,

@@ -12,6 +12,7 @@ export const CACHE_KEYS = {
   DASHBOARD_NET_ASSET: 'dashboard:net-asset',
   DASHBOARD_FORECAST: 'dashboard:forecast',
   DASHBOARD_FILES: 'dashboard:files',
+  DASHBOARD_TRADING: 'dashboard:trading_data',
 } as const;
 
 // Default TTL: 24 hours in seconds

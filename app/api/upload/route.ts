@@ -62,17 +62,21 @@ export async function POST(req: NextRequest) {
 
     const results = { sheet1: 0, sheet2: 0, sheet3: 0 };
 
+    // Clear old data to prevent trailing rows from persisting across uploads
     if (sheet1Rows && sheet1Rows.length > 0) {
+      await supabase.from('trading_data').delete().neq('id', 0);
       results.sheet1 = await batchUpsert('trading_data', sheet1Rows, 'date');
       console.log(`[upload] Sheet 1 (trading_data): ${results.sheet1} rows upserted`);
     }
 
     if (sheet2Rows && sheet2Rows.length > 0) {
+      await supabase.from('portfolio_3x').delete().neq('id', 0);
       results.sheet2 = await batchUpsert('portfolio_3x', sheet2Rows, 'date');
       console.log(`[upload] Sheet 2 (portfolio_3x): ${results.sheet2} rows upserted`);
     }
 
     if (sheet3Rows && sheet3Rows.length > 0) {
+      await supabase.from('portfolio_net_asset').delete().neq('id', 0);
       results.sheet3 = await batchUpsert('portfolio_net_asset', sheet3Rows, 'date');
       console.log(`[upload] Sheet 3 (portfolio_net_asset): ${results.sheet3} rows upserted`);
     }
@@ -85,6 +89,7 @@ export async function POST(req: NextRequest) {
       CACHE_KEYS.DASHBOARD_NET_ASSET,
       CACHE_KEYS.DASHBOARD_FORECAST,
       CACHE_KEYS.DASHBOARD_FILES,
+      CACHE_KEYS.DASHBOARD_TRADING
     );
 
     revalidatePath('/api/portfolio-data');
@@ -134,6 +139,7 @@ export async function DELETE(req: NextRequest) {
       CACHE_KEYS.DASHBOARD_NET_ASSET,
       CACHE_KEYS.DASHBOARD_FORECAST,
       CACHE_KEYS.DASHBOARD_FILES,
+      CACHE_KEYS.DASHBOARD_TRADING
     );
 
     revalidatePath('/api/portfolio-data');

@@ -84,7 +84,7 @@ export default function InternPortfolioPage() {
               </div>
             </div>
             <div className="text-[7pt] text-[#9B8A92] text-right">
-              <div>Rising Alpha Creator Portfolio · 3x Leverage · (Client: Mr. Yash Sharma)</div>
+              <div>Rising Alpha Creator Portfolio · 3x Leverage · (Client: Mr. Bhavin Patoliya)</div>
               <div>{formatDate(metrics.dateRange.from)} – {formatDate(metrics.dateRange.to)} · {metrics.totalDays} Trading Days</div>
               <div>Generated: {new Date().toLocaleString('en-IN')}</div>
             </div>

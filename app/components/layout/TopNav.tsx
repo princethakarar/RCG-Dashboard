@@ -34,15 +34,15 @@ export const TopNav: React.FC = () => {
   };
 
   const navItems = [
-    { name: 'Dashboard', path: '/' },
     { name: 'Rising Alpha Creator Portfolio 3x', path: '/intern-portfolio' },
     { name: 'Rising Alpha Creator Portfolio Net Asset', path: '/net-asset' },
     { name: 'Strategies', path: '/strategies' },
+    { name: 'Statistics', path: '/admin/statistics' },
     { name: 'Upload Data', path: '/upload' },
   ];
 
   const checkActive = (path: string) => {
-    if (path === '/') {
+    if (path === '/intern-portfolio') {
       return pathname === '/' || pathname === '/intern-portfolio';
     }
     return pathname === path;
@@ -68,8 +68,8 @@ export const TopNav: React.FC = () => {
           />
         </Link>
 
-        {/* Center: Navigation Links (Desktop/Tablet) */}
-        <nav className="hidden md:flex items-center gap-0.5 xl:gap-1.5 min-w-0 overflow-hidden">
+        {/* Center: Navigation Links (Desktop) */}
+        <nav className="hidden xl:flex items-center gap-0.5 xl:gap-1.5 min-w-0 overflow-hidden">
           {navItems.map((item) => {
             const isActive = checkActive(item.path);
             return (
@@ -85,7 +85,7 @@ export const TopNav: React.FC = () => {
         </nav>
 
         {/* Right: Date badge (Desktop) */}
-        <div className="hidden md:flex items-center gap-3 shrink-0">
+        <div className="hidden xl:flex items-center gap-3 shrink-0">
           {data.length > 0 && metrics && (
             <Badge variant="outline" className="border-[#8B0A3D] text-[#8B0A3D] font-semibold text-[11px] px-3 py-1 whitespace-nowrap">
               {getDateRangeStr()}
@@ -93,8 +93,8 @@ export const TopNav: React.FC = () => {
           )}
         </div>
 
-        {/* Mobile: Date + Hamburger */}
-        <div className="flex md:hidden items-center gap-2 shrink-0">
+        {/* Mobile/Tablet: Date + Hamburger */}
+        <div className="flex xl:hidden items-center gap-2 shrink-0">
           {data.length > 0 && metrics && (
             <Badge
               variant="outline"
@@ -114,9 +114,9 @@ export const TopNav: React.FC = () => {
 
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile/Tablet Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden absolute top-16 left-0 w-full bg-white border-b border-rcg-border shadow-lg z-50 flex flex-col py-3 px-4 gap-1">
+        <div className="xl:hidden absolute top-16 left-0 w-full bg-white border-b border-rcg-border shadow-lg z-50 flex flex-col py-3 px-4 gap-1">
           {navItems.map((item) => {
             const isActive = checkActive(item.path);
             return (

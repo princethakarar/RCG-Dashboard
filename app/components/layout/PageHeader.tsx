@@ -18,7 +18,9 @@ export const PageHeader: React.FC = () => {
       <div className="flex flex-col">
         <h1 className="text-xl sm:text-2xl lg:text-[28px] font-extrabold text-[#1A0A10] tracking-tight leading-tight flex flex-wrap items-baseline gap-x-2">
           <span>Rising Alpha Creator Portfolio <span className="text-[#8B0A3D]">{isNetAsset ? 'Net Asset' : '3x Leverage'}</span></span>
-          <span className="text-sm sm:text-base lg:text-lg font-medium text-[#6B4A58]">(Client: Mr. Yash Sharma)</span>
+          <span className="text-sm sm:text-base lg:text-lg font-medium text-[#6B4A58]">
+            {isNetAsset ? '(Client: Mr. Yash Sharma)' : '(Client: Mr. Bhavin Patoliya)'}
+          </span>
         </h1>
         <p className="text-xs sm:text-[13px] font-normal text-[#9B8A92] mt-1.5 sm:mt-2 font-sans">
           {isNetAsset 

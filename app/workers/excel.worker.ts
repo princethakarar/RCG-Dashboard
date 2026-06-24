@@ -320,6 +320,80 @@ self.addEventListener('message', (event) => {
       return;
     }
 
+    if (type === 'parse_max_upside_downside') {
+      const wb = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+      
+      const sheetName = wb.SheetNames.find(s => s.trim().toLowerCase() === 'sheet1') || wb.SheetNames[0];
+      if (!sheetName) {
+        throw new Error('Could not find Sheet1 or any sheet in the Excel file.');
+      }
+      
+      const ws = wb.Sheets[sheetName];
+      const rawData = XLSX.utils.sheet_to_json(ws, { header: 1 }) as ExcelCellValue[][];
+      
+      let headerRowIdx = 0;
+      for (let i = 0; i < Math.min(10, rawData.length); i++) {
+        const row = rawData[i];
+        if (row && row.some(cell => String(cell || '').trim().toLowerCase() === 'date')) {
+          headerRowIdx = i;
+          break;
+        }
+      }
+
+      const headers = rawData[headerRowIdx] || [];
+      const getColIdx = (name: string, defaultIdx: number) => {
+        const idx = headers.findIndex(h => String(h || '').trim().toLowerCase() === name.toLowerCase());
+        return idx !== -1 ? idx : defaultIdx;
+      };
+      
+      const dateIdx = getColIdx('DATE', 0);
+      const downside10Idx = getColIdx('MAX DOWN SIDE 10%', 5);
+      const downsideT0Idx = getColIdx('MAX DOWNSIDE T+0', 6);
+      const upsideT0Idx = getColIdx('MAX UPSIDE T+0', 7);
+      const upside10Idx = getColIdx('MAX UPSIDE 10%', 8);
+      
+      const rows: Record<string, unknown>[] = [];
+      
+      for (let i = headerRowIdx + 1; i < rawData.length; i++) {
+        const row = rawData[i];
+        if (!row || row.length === 0) break;
+        
+        const dateStr = parseExcelDate(row[dateIdx]);
+        if (!dateStr) break;
+
+        // Core market columns (B, C, D, E) non-zero check
+        const valB = parseFloatValue(row[1]);
+        const valC = parseFloatValue(row[2]);
+        const valD = parseFloatValue(row[3]);
+        const valE = parseFloatValue(row[4]);
+        
+        // If all of them are zero, it is dead/placeholder trailing rows, stop extraction!
+        if (valB === 0 && valC === 0 && valD === 0 && valE === 0) {
+          console.log(`Stopping extraction at row ${i} (${dateStr}) due to zero-valued core market columns.`);
+          break;
+        }
+
+        const max_downside_10 = parseFloatValueOrNull(row[downside10Idx]);
+        const max_downside_t0 = parseFloatValueOrNull(row[downsideT0Idx]);
+        const max_upside_t0 = parseFloatValueOrNull(row[upsideT0Idx]);
+        const max_upside_10 = parseFloatValueOrNull(row[upside10Idx]);
+
+        rows.push({
+          date: dateStr,
+          max_downside_10: max_downside_10,
+          max_downside_t0: max_downside_t0,
+          max_upside_t0: max_upside_t0,
+          max_upside_10: max_upside_10,
+        });
+      }
+
+      self.postMessage({
+        success: true,
+        data: rows
+      });
+      return;
+    }
+
     throw new Error(`Unknown worker job type: ${type}`);
   } catch (error: unknown) {
     self.postMessage({

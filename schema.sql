@@ -113,3 +113,18 @@ CREATE TABLE IF NOT EXISTS strategies_summary (
 
 ALTER TABLE strategies_data ENABLE ROW LEVEL SECURITY;
 ALTER TABLE strategies_summary ENABLE ROW LEVEL SECURITY;
+
+-- Max Upside / Downside Statistics Data
+CREATE TABLE IF NOT EXISTS max_upside_downside (
+  id                  SERIAL PRIMARY KEY,
+  date                DATE NOT NULL UNIQUE,
+  max_downside_10     NUMERIC(15, 4),
+  max_downside_t0     NUMERIC(15, 4),
+  max_upside_t0       NUMERIC(15, 4),
+  max_upside_10       NUMERIC(15, 4),
+  created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_max_upside_downside_date ON max_upside_downside(date);
+ALTER TABLE max_upside_downside ENABLE ROW LEVEL SECURITY;
+

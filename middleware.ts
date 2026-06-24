@@ -9,9 +9,11 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/intern-portfolio') ||
     pathname.startsWith('/net-asset') ||
     pathname.startsWith('/upload') ||
+    pathname.startsWith('/admin') ||
     pathname.startsWith('/update-security-config-31f2') ||
     pathname.startsWith('/api/portfolio-data') ||
-    pathname.startsWith('/api/upload');
+    pathname.startsWith('/api/upload') ||
+    pathname.startsWith('/api/max-upside-downside');
 
   if (!isProtectedPath) {
     // If user is already logged in with a valid session and tries to access /login, redirect to dashboard

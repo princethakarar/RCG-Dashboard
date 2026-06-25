@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
@@ -160,7 +161,8 @@ export const TopNav: React.FC = () => {
             </div>
           )}
 
-          {/* Profile Dropdown */}
+          {/* Profile Dropdown (Temporarily Hidden) */}
+          {/*
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -175,7 +177,6 @@ export const TopNav: React.FC = () => {
 
             {dropdownOpen && (
               <div className="absolute right-0 mt-2 w-64 bg-white border border-[#EDE0E6] rounded-2xl shadow-[0_10px_25px_-5px_rgba(139,10,61,0.08),0_8px_16px_-6px_rgba(139,10,61,0.04)] py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150 origin-top-right">
-                {/* User Email Area */}
                 <div className="px-4 py-2 border-b border-[#EDE0E6] mb-2">
                   <p className="text-[10px] font-bold text-[#9B8A92] uppercase tracking-wider">Signed In As</p>
                   <p className="text-xs font-semibold text-[#1A0A10] truncate mt-0.5" title={userEmail || 'Loading...'}>
@@ -183,7 +184,6 @@ export const TopNav: React.FC = () => {
                   </p>
                 </div>
                 
-                {/* Logout Button */}
                 <div className="px-2">
                   <button
                     onClick={handleLogout}
@@ -196,6 +196,7 @@ export const TopNav: React.FC = () => {
               </div>
             )}
           </div>
+          */}
 
           {/* Mobile/Tablet: Hamburger Menu Button */}
           <div className="flex xl:hidden">

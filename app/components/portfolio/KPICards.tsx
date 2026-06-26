@@ -17,9 +17,10 @@ import {
 
 interface KPICardsProps {
   metrics: PortfolioMetrics;
+  isNetAsset?: boolean;
 }
 
-export const KPICards: React.FC<KPICardsProps> = ({ metrics }) => {
+export const KPICards: React.FC<KPICardsProps> = ({ metrics, isNetAsset = false }) => {
   const {
     currentRunningROI,
     winRatio,
@@ -43,7 +44,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ metrics }) => {
       <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card>
         <CardHeader className="kpi-card-header pb-2">
           <CardDescription className="kpi-card-label font-semibold uppercase tracking-wide text-[#9B8A92] flex items-center justify-between gap-1">
-            <span className="leading-tight">RUNNING ROI ON DEPOSIT</span>
+            <span className="leading-tight">{isNetAsset ? 'RUNNING ROI ON NET ASSET' : 'RUNNING ROI ON DEPOSIT'}</span>
             <div className="flex items-center gap-1 shrink-0">
               {currentRunningROI >= 0 ? (
                 <TrendingUp className="w-3.5 h-3.5 text-[#16A34A]" />
@@ -156,18 +157,18 @@ export const KPICards: React.FC<KPICardsProps> = ({ metrics }) => {
         </CardContent>
       </Card>
 
-      {/* CARD 6: Highest Point Achieved */}
+      {/* CARD 6: Highest NAV Achieved */}
       {highestPoint && (
         <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card>
           <CardHeader className="kpi-card-header pb-2">
             <CardDescription className="kpi-card-label font-semibold uppercase tracking-wide text-[#9B8A92] flex items-center justify-between gap-1">
-              <span className="leading-tight">HIGHEST POINT ACHIEVED</span>
+              <span className="leading-tight">HIGHEST NAV ACHIEVED</span>
               <TrendingUp className="w-3.5 h-3.5 text-[#16A34A] shrink-0" />
             </CardDescription>
           </CardHeader>
           <CardContent className="kpi-card-body">
             <div className="kpi-card-value tracking-tight text-[#16A34A]">
-              {formatWithPlus(highestPoint.roi)}
+              {highestPoint.roi.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}
             </div>
             <p className="text-[10px] sm:text-[11px] text-[#9B8A92] mt-1 font-sans">
               Achieved {formatDateFull(highestPoint.date)}
@@ -190,7 +191,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ metrics }) => {
           </div>
           <p className="text-[10px] sm:text-[11px] text-[#9B8A92] mt-1 font-sans">
             {avgDaysToNewHigh !== null && avgDaysToNewHigh !== undefined 
-              ? 'Average gap between new ROI highs' 
+              ? 'Average gap between new NAV highs' 
               : 'Not enough data yet'}
           </p>
         </CardContent>

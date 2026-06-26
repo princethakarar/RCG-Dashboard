@@ -20,7 +20,7 @@ function getMonthlyBreakdown(rows: PortfolioRow[]): { month: string; count: numb
   }));
 }
 
-export function computeMetrics(rows: PortfolioRow[]): PortfolioMetrics | null {
+export function computeMetrics(rows: PortfolioRow[], navSeries?: { date: string; final_nav: number }[]): PortfolioMetrics | null {
   if (!rows.length) return null;
 
   const winDays = rows.filter(r => r.netMTM > 0).length;
@@ -92,10 +92,10 @@ export function computeMetrics(rows: PortfolioRow[]): PortfolioMetrics | null {
     };
   });
 
-  const runningROISeries = rows
-    .filter(r => r.runningROI !== null && !isNaN(r.runningROI))
-    .map(r => ({ date: r.date, roi: r.runningROI }));
-  const newHighStats = computeNewHighStats(runningROISeries);
+  const navROISeries = (navSeries || [])
+    .filter(r => r.final_nav !== null && !isNaN(r.final_nav))
+    .map(r => ({ date: r.date, roi: r.final_nav }));
+  const newHighStats = computeNewHighStats(navROISeries);
 
   return {
     totalDays: rows.length,
@@ -123,7 +123,7 @@ export function computeMetrics(rows: PortfolioRow[]): PortfolioMetrics | null {
   };
 }
 
-export function computeNetAssetMetrics(rows: PortfolioRow[]): PortfolioMetrics | null {
+export function computeNetAssetMetrics(rows: PortfolioRow[], navSeries?: { date: string; final_nav: number }[]): PortfolioMetrics | null {
   if (!rows.length) return null;
 
   // Win Ratio %: COUNT(col D > 0) / total valid rows * 100
@@ -199,10 +199,10 @@ export function computeNetAssetMetrics(rows: PortfolioRow[]): PortfolioMetrics |
     };
   });
 
-  const runningROISeries = rows
-    .filter(r => r.runningROI !== null && !isNaN(r.runningROI))
-    .map(r => ({ date: r.date, roi: r.runningROI }));
-  const newHighStats = computeNewHighStats(runningROISeries);
+  const navROISeries = (navSeries || [])
+    .filter(r => r.final_nav !== null && !isNaN(r.final_nav))
+    .map(r => ({ date: r.date, roi: r.final_nav }));
+  const newHighStats = computeNewHighStats(navROISeries);
 
   return {
     totalDays: rows.length,

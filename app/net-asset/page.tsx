@@ -99,7 +99,7 @@ export default function NetAssetPortfolioPage() {
             
             {/* 1. KPI Cards Row */}
             <div id="section-kpi" className="kpi-row scroll-mt-20" data-kpi-row>
-              <KPICards metrics={metrics} />
+              <KPICards metrics={metrics} isNetAsset={true} />
             </div>
 
             {/* 2. Cumulative Performance Chart */}

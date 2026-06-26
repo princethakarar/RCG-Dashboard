@@ -61,7 +61,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setFiles(json.files || []);
       
       if (json.data && json.data.length > 0) {
-        const computed = computeMetrics(json.data);
+        const computed = computeMetrics(json.data, json.nav3xSeries || []);
         if (computed) {
           computed.annualizedForecast = json.annualizedForecast3x ?? null;
         }
@@ -71,7 +71,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
       
       if (json.netAssetData && json.netAssetData.length > 0) {
-        const computedNet = computeNetAssetMetrics(json.netAssetData);
+        const computedNet = computeNetAssetMetrics(json.netAssetData, json.navNetSeries || []);
         if (computedNet) {
           computedNet.annualizedForecast = json.annualizedForecastNetAsset ?? null;
         }

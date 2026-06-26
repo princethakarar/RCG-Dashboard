@@ -62,19 +62,19 @@ export const PeriodicReturnsCards: React.FC<PeriodicReturnsCardsProps> = ({ data
       tooltip: 'Daily return of the last valid trading day.',
     },
     {
-      label: 'LAST WEEK RETURN',
+      label: 'CURRENT WEEK RETURN',
       value: lastWeekReturn,
       tooltip: 'Sum of daily returns of the last 5 valid trading days.',
     },
     {
-      label: 'LAST MONTH RETURN',
+      label: 'CURRENT MONTH RETURN',
       value: lastMonthReturn,
-      tooltip: 'Sum of daily returns of all trading days in the last calendar month of data (June 2026).',
+      tooltip: 'Sum of daily returns of all trading days in the current calendar month of data (June 2026).',
     },
     {
-      label: 'LAST YEAR RETURN',
+      label: 'CURRENT YEAR RETURN',
       value: lastYearReturn,
-      tooltip: 'Sum of daily returns of all trading days in the year 2026.',
+      tooltip: 'Sum of daily returns of all trading days in the current year 2026.',
     },
     {
       label: 'SINCE INCEPTION',

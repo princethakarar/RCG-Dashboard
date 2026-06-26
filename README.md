@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="./public/logo_mark.png" width="36" height="36" alt="Icon" style="vertical-align: middle; margin-right: 8px;">
+  <img src="./public/logo_mark.png" width="32" height="32" alt="Icon" style="vertical-align: text-bottom; margin-right: 8px;">
   RCG-Dashboard
 </h1>
 

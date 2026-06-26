@@ -1,6 +1,6 @@
 <p align="center">
   <h1 align="center">
-    <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/bar-chart-3.svg" width="32" height="32" alt="Icon" style="vertical-align: middle; margin-right: 8px;">
+    <img src="./public/logo_mark.png" width="48" height="48" alt="Icon" style="vertical-align: middle; margin-right: 8px;">
     RCG-Dashboard
   </h1>
 </p>
@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img src="./screenshots/landing.png" alt="RCG Dashboard Hero" width="800" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+  <img src="./screenshots/hero.png" alt="RCG Dashboard Hero" width="800" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
 </p>
 
 <p align="center">
@@ -24,40 +24,6 @@
 </p>
 
 <hr>
-
-## 📸 Visual Overview
-
-<details>
-  <summary><strong>📊 Net Asset Tracking</strong></summary>
-  <br>
-  <img src="./screenshots/net-asset.png" alt="Net Asset Tracking" width="800" style="border-radius: 8px;">
-</details>
-
-<details>
-  <summary><strong>📈 Investment Strategies</strong></summary>
-  <br>
-  <img src="./screenshots/strategies.png" alt="Strategies View" width="800" style="border-radius: 8px;">
-</details>
-
-<details>
-  <summary><strong>📤 Data Upload & Excel Parsing</strong></summary>
-  <br>
-  <img src="./screenshots/upload.png" alt="Upload Interface" width="800" style="border-radius: 8px;">
-</details>
-
-<details>
-  <summary><strong>💼 Intern Portfolio Tracking</strong></summary>
-  <br>
-  <img src="./screenshots/intern-portfolio.png" alt="Intern Portfolio" width="800" style="border-radius: 8px;">
-</details>
-
-<details>
-  <summary><strong>⚙️ Admin Controls</strong></summary>
-  <br>
-  <img src="./screenshots/admin.png" alt="Admin Controls" width="800" style="border-radius: 8px;">
-</details>
-
----
 
 ## 🏗️ System Architecture / Data Flow
 

@@ -9,6 +9,9 @@ CREATE TABLE IF NOT EXISTS trading_data (
   carry_peak      NUMERIC(15, 4),
   avg_deposit     NUMERIC(15, 4),
   net_margin      NUMERIC(15, 4),
+  position_cr_dr  NUMERIC(15, 4),
+  cr_dr_vs_margin_pct NUMERIC(10, 6),
+  margin_use_carry NUMERIC(15, 4),
   created_at      TIMESTAMPTZ DEFAULT NOW(),
   updated_at      TIMESTAMPTZ DEFAULT NOW()
 );

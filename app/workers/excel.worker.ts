@@ -37,6 +37,9 @@ self.addEventListener('message', (event) => {
             carry_peak: parseFloatValue(row[14]),
             avg_deposit: parseFloatValue(row[15]),
             net_margin: parseFloatValue(row[16]),
+            position_cr_dr: parseFloatValueOrNull(row[6]),
+            cr_dr_vs_margin_pct: parseFloatValueOrNull(row[7]),
+            margin_use_carry: parseFloatValueOrNull(row[13]),
           });
         }
         console.log(`Extracted ${sheet1Rows.length} valid rows out of ${rawSheet1.length} total rows in sheet RCG INTERS`);

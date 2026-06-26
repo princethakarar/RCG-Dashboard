@@ -20,6 +20,7 @@ import { ReturnDistribution } from '../components/portfolio/ReturnDistribution';
 import { SwingComparisonChart } from '../components/portfolio/SwingComparisonChart';
 import { NAVChart } from '../components/portfolio/NAVChart';
 import { CarryPeakChart } from '../components/portfolio/CarryPeakChart';
+import { PositionCrDrMarginChart } from '../components/portfolio/PositionCrDrMarginChart';
 import { FolderOpen, ArrowRight, ShieldAlert, Loader } from 'lucide-react';
 import Link from 'next/link';
 import { formatDate } from '../lib/formatters';
@@ -117,6 +118,13 @@ export default function InternPortfolioPage() {
             {tradingData && tradingData.length > 0 && (
               <div className="scroll-mt-20 animate-fade-in" data-chart-card data-chart-full>
                 <CarryPeakChart tradingData={tradingData} denominatorKey="avg_deposit" dashboardType="3x" />
+              </div>
+            )}
+
+            {/* Position CR/DR vs Used Margin % Chart */}
+            {tradingData && tradingData.length > 0 && (
+              <div className="scroll-mt-20 animate-fade-in" data-chart-card data-chart-full>
+                <PositionCrDrMarginChart tradingData={tradingData} />
               </div>
             )}
 

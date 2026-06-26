@@ -5,6 +5,9 @@ export interface TradingDataRow {
   carry_peak: number;
   avg_deposit: number;
   net_margin: number;
+  position_cr_dr: number | null;
+  cr_dr_vs_margin_pct: number | null;
+  margin_use_carry: number | null;
 }
 
 export interface PortfolioRow {

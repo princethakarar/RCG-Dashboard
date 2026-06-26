@@ -1,9 +1,7 @@
-<p align="center">
-  <h1 align="center">
-    <img src="./public/logo_mark.png" width="48" height="48" alt="Icon" style="vertical-align: middle; margin-right: 8px;">
-    RCG-Dashboard
-  </h1>
-</p>
+<h1 align="center">
+  <img src="./public/logo_mark.png" width="36" height="36" alt="Icon" style="vertical-align: middle; margin-right: 8px;">
+  RCG-Dashboard
+</h1>
 
 <p align="center">
   <a href="#"><img src="https://img.shields.io/badge/Next.js-14-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js"></a>

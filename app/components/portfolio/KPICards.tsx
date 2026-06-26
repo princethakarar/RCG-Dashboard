@@ -3,7 +3,7 @@
 import React from 'react';
 import { PieChart, Pie } from 'recharts';
 import { PortfolioMetrics } from '../../lib/types';
-import { formatDate } from '../../lib/formatters';
+import { formatDate, formatDateFull } from '../../lib/formatters';
 import { Card, CardHeader, CardDescription, CardContent } from '../ui/card';
 import { 
   TrendingUp, 
@@ -11,7 +11,8 @@ import {
   Calendar, 
   Activity, 
   BarChart2,
-  TrendingDown
+  TrendingDown,
+  Clock
 } from 'lucide-react';
 
 interface KPICardsProps {
@@ -26,7 +27,9 @@ export const KPICards: React.FC<KPICardsProps> = ({ metrics }) => {
     avgAbsDailyROI,
     avgNiftySwing,
     winDays,
-    dateRange
+    dateRange,
+    highestPoint,
+    avgDaysToNewHigh
   } = metrics;
 
   const formatWithPlus = (val: number) => {
@@ -150,6 +153,46 @@ export const KPICards: React.FC<KPICardsProps> = ({ metrics }) => {
             {avgNiftySwing.toFixed(2)}%
           </div>
           <p className="text-[10px] sm:text-[11px] text-[#9B8A92] mt-1 font-sans">Average Nifty daily range %</p>
+        </CardContent>
+      </Card>
+
+      {/* CARD 6: Highest Point Achieved */}
+      {highestPoint && (
+        <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card>
+          <CardHeader className="kpi-card-header pb-2">
+            <CardDescription className="kpi-card-label font-semibold uppercase tracking-wide text-[#9B8A92] flex items-center justify-between gap-1">
+              <span className="leading-tight">HIGHEST POINT ACHIEVED</span>
+              <TrendingUp className="w-3.5 h-3.5 text-[#16A34A] shrink-0" />
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="kpi-card-body">
+            <div className="kpi-card-value tracking-tight text-[#16A34A]">
+              {formatWithPlus(highestPoint.roi)}
+            </div>
+            <p className="text-[10px] sm:text-[11px] text-[#9B8A92] mt-1 font-sans">
+              Achieved {formatDateFull(highestPoint.date)}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* CARD 7: Avg Days to Reach New High */}
+      <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card>
+        <CardHeader className="kpi-card-header pb-2">
+          <CardDescription className="kpi-card-label font-semibold uppercase tracking-wide text-[#9B8A92] flex items-center justify-between gap-1">
+            <span className="leading-tight">AVG DAYS TO NEW HIGH</span>
+            <Clock className="w-3.5 h-3.5 text-[#1A0A10] shrink-0" />
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="kpi-card-body">
+          <div className="kpi-card-value tracking-tight text-[#1A0A10]">
+            {avgDaysToNewHigh !== null && avgDaysToNewHigh !== undefined ? `${avgDaysToNewHigh} days` : 'N/A'}
+          </div>
+          <p className="text-[10px] sm:text-[11px] text-[#9B8A92] mt-1 font-sans">
+            {avgDaysToNewHigh !== null && avgDaysToNewHigh !== undefined 
+              ? 'Average gap between new ROI highs' 
+              : 'Not enough data yet'}
+          </p>
         </CardContent>
       </Card>
 

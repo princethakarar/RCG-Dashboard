@@ -92,6 +92,11 @@ export function computeMetrics(rows: PortfolioRow[]): PortfolioMetrics | null {
     };
   });
 
+  const runningROISeries = rows
+    .filter(r => r.runningROI !== null && !isNaN(r.runningROI))
+    .map(r => ({ date: r.date, roi: r.runningROI }));
+  const newHighStats = computeNewHighStats(runningROISeries);
+
   return {
     totalDays: rows.length,
     winDays,
@@ -112,7 +117,9 @@ export function computeMetrics(rows: PortfolioRow[]): PortfolioMetrics | null {
     roiDistribution,
     mayCounts,
     junCounts,
-    monthlyBreakdown
+    monthlyBreakdown,
+    highestPoint: newHighStats.highestPoint,
+    avgDaysToNewHigh: newHighStats.avgDaysToNewHigh
   };
 }
 
@@ -192,6 +199,11 @@ export function computeNetAssetMetrics(rows: PortfolioRow[]): PortfolioMetrics |
     };
   });
 
+  const runningROISeries = rows
+    .filter(r => r.runningROI !== null && !isNaN(r.runningROI))
+    .map(r => ({ date: r.date, roi: r.runningROI }));
+  const newHighStats = computeNewHighStats(runningROISeries);
+
   return {
     totalDays: rows.length,
     winDays,
@@ -212,6 +224,42 @@ export function computeNetAssetMetrics(rows: PortfolioRow[]): PortfolioMetrics |
     roiDistribution,
     mayCounts,
     junCounts,
-    monthlyBreakdown
+    monthlyBreakdown,
+    highestPoint: newHighStats.highestPoint,
+    avgDaysToNewHigh: newHighStats.avgDaysToNewHigh
+  };
+}
+
+export function computeNewHighStats(series: { date: string; roi: number }[]): {
+  highestPoint: { date: string; roi: number } | null;
+  avgDaysToNewHigh: number | null;
+} {
+  if (!series || series.length === 0) {
+    return { highestPoint: null, avgDaysToNewHigh: null };
+  }
+
+  let runningPeak = { date: series[0].date, roi: series[0].roi };
+  const gapsBetweenHighs: number[] = [];
+
+  for (let i = 1; i < series.length; i++) {
+    const current = series[i];
+    if (current.roi > runningPeak.roi) {
+      const d1 = new Date(runningPeak.date);
+      const d2 = new Date(current.date);
+      const diffTime = d2.getTime() - d1.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      
+      gapsBetweenHighs.push(diffDays);
+      runningPeak = { date: current.date, roi: current.roi };
+    }
+  }
+
+  const avgDaysToNewHigh = gapsBetweenHighs.length > 0
+    ? Number((gapsBetweenHighs.reduce((sum, val) => sum + val, 0) / gapsBetweenHighs.length).toFixed(1))
+    : null;
+
+  return {
+    highestPoint: runningPeak,
+    avgDaysToNewHigh,
   };
 }

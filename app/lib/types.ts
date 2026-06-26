@@ -52,6 +52,8 @@ export interface PortfolioMetrics {
   junCounts: number;
   monthlyBreakdown?: { month: string; count: number }[];
   annualizedForecast?: number | null;
+  highestPoint?: { date: string; roi: number } | null;
+  avgDaysToNewHigh?: number | null;
 }
 
 export interface LoadedFile {

@@ -1,10 +1,12 @@
-import { NextResponse } from 'next/server';
-import { supabase } from '../../lib/supabase'; // Service role client
+import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '../../lib/supabase';
+import { getUserId } from '../../lib/getUser';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
+    const userId = await getUserId(request);
     const { searchParams } = new URL(request.url);
     const strategyName = searchParams.get('strategyName');
 
@@ -17,11 +19,13 @@ export async function GET(request: Request) {
         .from('strategies_data')
         .select('*')
         .eq('strategy_name', strategyName)
+        .eq('user_id', userId)
         .order('date', { ascending: true }),
       supabase
         .from('strategies_summary')
         .select('*')
         .eq('strategy_name', strategyName)
+        .eq('user_id', userId)
         .single()
     ]);
 

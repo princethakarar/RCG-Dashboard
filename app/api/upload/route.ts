@@ -4,6 +4,7 @@ import { put, del } from '@vercel/blob';
 
 import { supabase } from '../../lib/supabase';
 import { invalidateCache, CACHE_KEYS } from '../../lib/redis';
+import { getUserId } from '../../lib/getUser';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +36,8 @@ async function batchUpsert(table: string, rows: Record<string, unknown>[], confl
 
 export async function POST(req: NextRequest) {
   try {
+    const userId = await getUserId(req);
+
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const parsedDataStr = formData.get('parsedData') as string;
@@ -48,7 +51,7 @@ export async function POST(req: NextRequest) {
     let blobUrl = '';
     if (file) {
       try {
-        const blob = await put(`data/${file.name}`, file, {
+        const blob = await put(`users/${userId}/data/${file.name}`, file, {
           access: 'private',
           allowOverwrite: true,
           token: process.env.BLOB_READ_WRITE_TOKEN,
@@ -62,34 +65,37 @@ export async function POST(req: NextRequest) {
 
     const results = { sheet1: 0, sheet2: 0, sheet3: 0 };
 
-    // Clear old data to prevent trailing rows from persisting across uploads
+    // Clear old data for this user, then insert new
     if (sheet1Rows && sheet1Rows.length > 0) {
-      await supabase.from('trading_data').delete().neq('id', 0);
-      results.sheet1 = await batchUpsert('trading_data', sheet1Rows, 'date');
-      console.log(`[upload] Sheet 1 (trading_data): ${results.sheet1} rows upserted`);
+      await supabase.from('trading_data').delete().eq('user_id', userId);
+      const rowsWithUser = sheet1Rows.map((r: Record<string, unknown>) => ({ ...r, user_id: userId }));
+      results.sheet1 = await batchUpsert('trading_data', rowsWithUser, 'user_id,date');
+      console.log(`[upload] Sheet 1 (trading_data): ${results.sheet1} rows upserted for user ${userId}`);
     }
 
     if (sheet2Rows && sheet2Rows.length > 0) {
-      await supabase.from('portfolio_3x').delete().neq('id', 0);
-      results.sheet2 = await batchUpsert('portfolio_3x', sheet2Rows, 'date');
-      console.log(`[upload] Sheet 2 (portfolio_3x): ${results.sheet2} rows upserted`);
+      await supabase.from('portfolio_3x').delete().eq('user_id', userId);
+      const rowsWithUser = sheet2Rows.map((r: Record<string, unknown>) => ({ ...r, user_id: userId }));
+      results.sheet2 = await batchUpsert('portfolio_3x', rowsWithUser, 'user_id,date');
+      console.log(`[upload] Sheet 2 (portfolio_3x): ${results.sheet2} rows upserted for user ${userId}`);
     }
 
     if (sheet3Rows && sheet3Rows.length > 0) {
-      await supabase.from('portfolio_net_asset').delete().neq('id', 0);
-      results.sheet3 = await batchUpsert('portfolio_net_asset', sheet3Rows, 'date');
-      console.log(`[upload] Sheet 3 (portfolio_net_asset): ${results.sheet3} rows upserted`);
+      await supabase.from('portfolio_net_asset').delete().eq('user_id', userId);
+      const rowsWithUser = sheet3Rows.map((r: Record<string, unknown>) => ({ ...r, user_id: userId }));
+      results.sheet3 = await batchUpsert('portfolio_net_asset', rowsWithUser, 'user_id,date');
+      console.log(`[upload] Sheet 3 (portfolio_net_asset): ${results.sheet3} rows upserted for user ${userId}`);
     }
 
     // ──────────────────────────────────────────
-    // Step 4: Invalidate Redis cache
+    // Invalidate per-user Redis cache
     // ──────────────────────────────────────────
     await invalidateCache(
-      CACHE_KEYS.DASHBOARD_3X,
-      CACHE_KEYS.DASHBOARD_NET_ASSET,
-      CACHE_KEYS.DASHBOARD_FORECAST,
-      CACHE_KEYS.DASHBOARD_FILES,
-      CACHE_KEYS.DASHBOARD_TRADING
+      `user:${userId}:${CACHE_KEYS.DASHBOARD_3X}`,
+      `user:${userId}:${CACHE_KEYS.DASHBOARD_NET_ASSET}`,
+      `user:${userId}:${CACHE_KEYS.DASHBOARD_FORECAST}`,
+      `user:${userId}:${CACHE_KEYS.DASHBOARD_FILES}`,
+      `user:${userId}:${CACHE_KEYS.DASHBOARD_TRADING}`
     );
 
     revalidatePath('/api/portfolio-data');
@@ -108,14 +114,15 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const userId = await getUserId(req);
     const { searchParams } = new URL(req.url);
     const url = searchParams.get('url');
 
-    // 1. Clear database tables in Supabase
+    // 1. Clear database tables for this user only
     const [resTrading, res3x, resNet] = await Promise.all([
-      supabase.from('trading_data').delete().neq('id', 0),
-      supabase.from('portfolio_3x').delete().neq('id', 0),
-      supabase.from('portfolio_net_asset').delete().neq('id', 0),
+      supabase.from('trading_data').delete().eq('user_id', userId),
+      supabase.from('portfolio_3x').delete().eq('user_id', userId),
+      supabase.from('portfolio_net_asset').delete().eq('user_id', userId),
     ]);
 
     if (resTrading.error) {
@@ -133,13 +140,13 @@ export async function DELETE(req: NextRequest) {
       await del(url, { token: process.env.BLOB_READ_WRITE_TOKEN });
     }
 
-    // 3. Invalidate Redis cache
+    // 3. Invalidate per-user Redis cache
     await invalidateCache(
-      CACHE_KEYS.DASHBOARD_3X,
-      CACHE_KEYS.DASHBOARD_NET_ASSET,
-      CACHE_KEYS.DASHBOARD_FORECAST,
-      CACHE_KEYS.DASHBOARD_FILES,
-      CACHE_KEYS.DASHBOARD_TRADING
+      `user:${userId}:${CACHE_KEYS.DASHBOARD_3X}`,
+      `user:${userId}:${CACHE_KEYS.DASHBOARD_NET_ASSET}`,
+      `user:${userId}:${CACHE_KEYS.DASHBOARD_FORECAST}`,
+      `user:${userId}:${CACHE_KEYS.DASHBOARD_FILES}`,
+      `user:${userId}:${CACHE_KEYS.DASHBOARD_TRADING}`
     );
 
     revalidatePath('/api/portfolio-data');

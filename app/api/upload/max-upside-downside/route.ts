@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { supabase } from '../../../lib/supabase';
 import { put } from '@vercel/blob';
 import { invalidateCache } from '../../../lib/redis';
+import { getUserId } from '../../../lib/getUser';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -10,6 +11,8 @@ export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
+    const userId = await getUserId(req);
+
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const parsedDataStr = formData.get('parsedData') as string;
@@ -20,36 +23,36 @@ export async function POST(req: NextRequest) {
 
     const rows = JSON.parse(parsedDataStr) as Record<string, unknown>[];
 
-    // Optional backup to Vercel Blob if file is small enough
+    // Optional backup to Vercel Blob with user-scoped path
     if (file) {
       try {
-        await put(`data/max-upside-downside/${file.name}`, file, {
+        await put(`users/${userId}/data/max-upside-downside/${file.name}`, file, {
           access: 'private',
           allowOverwrite: true,
           token: process.env.BLOB_READ_WRITE_TOKEN,
         });
-        console.log(`[max-upside-downside] Blob backup saved: ${file.name}`);
+        console.log(`[max-upside-downside] Blob backup saved: ${file.name} for user ${userId}`);
       } catch (blobErr) {
         console.error('[max-upside-downside] Blob backup failed (non-critical):', blobErr);
       }
     }
 
-    // Clear old rows first (delete all rows with id not equal to 0, which is all rows)
-    console.log('[max-upside-downside] Deleting old rows from Supabase...');
+    // Clear old rows for this user
+    console.log(`[max-upside-downside] Deleting old rows for user ${userId}...`);
     const { error: deleteError } = await supabase
       .from('max_upside_downside')
       .delete()
-      .neq('id', 0);
+      .eq('user_id', userId);
 
     if (deleteError) {
       throw new Error(`Database error (clear max_upside_downside): ${deleteError.message}`);
     }
 
-    // Bulk insert new rows in batches of 500
+    // Bulk insert new rows with user_id in batches of 500
     if (rows && rows.length > 0) {
       const BATCH_SIZE = 500;
       for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-        const batch = rows.slice(i, i + BATCH_SIZE);
+        const batch = rows.slice(i, i + BATCH_SIZE).map((r) => ({ ...r, user_id: userId }));
         const { error: insertError } = await supabase
           .from('max_upside_downside')
           .insert(batch);
@@ -58,13 +61,12 @@ export async function POST(req: NextRequest) {
           throw new Error(`Database error (insert max_upside_downside batch): ${insertError.message}`);
         }
       }
-      console.log(`[max-upside-downside] Successfully inserted ${rows.length} rows.`);
+      console.log(`[max-upside-downside] Successfully inserted ${rows.length} rows for user ${userId}.`);
     }
 
-    // Invalidate Redis cache
-    await invalidateCache('dashboard:max_upside_downside');
+    // Invalidate per-user Redis cache
+    await invalidateCache(`user:${userId}:dashboard:max_upside_downside`);
 
-    // Revalidate paths
     revalidatePath('/admin/statistics');
     revalidatePath('/api/max-upside-downside');
 

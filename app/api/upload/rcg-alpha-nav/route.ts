@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { supabase } from '../../../lib/supabase';
 import redis, { invalidateCache, CACHE_KEYS } from '../../../lib/redis';
-
 import { put } from '@vercel/blob';
+import { getUserId } from '../../../lib/getUser';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,6 +13,8 @@ export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
+    const userId = await getUserId(req);
+
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const parsedDataStr = formData.get('parsedData') as string;
@@ -27,21 +29,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid parsed data in request body' }, { status: 400 });
     }
 
-    // Optional backup to Vercel Blob if file is small enough
+    // Optional backup to Vercel Blob with user-scoped path
     if (file) {
       try {
-        await put(`data/${file.name}`, file, {
+        await put(`users/${userId}/data/${file.name}`, file, {
           access: 'private',
           allowOverwrite: true,
           token: process.env.BLOB_READ_WRITE_TOKEN,
         });
-        console.log(`[rcg-alpha-nav] Blob backup saved: ${file.name}`);
+        console.log(`[rcg-alpha-nav] Blob backup saved: ${file.name} for user ${userId}`);
       } catch (blobErr) {
         console.error('[rcg-alpha-nav] Blob backup failed (non-critical):', blobErr);
       }
     }
 
-    // Sanity check valid-rows count (should be more than 1)
+    // Sanity check valid-rows count
     if (data3x.series.length <= 1 || dataNet.series.length <= 1) {
       console.warn(`[rcg-alpha-nav] Suspiciously low valid rows count. 3x count: ${data3x.series.length}, Net count: ${dataNet.series.length}`);
       return NextResponse.json({
@@ -50,13 +52,13 @@ export async function POST(req: NextRequest) {
     }
 
     // ──────────────────────────────────────────
-    // Supabase storage (Delete old rows first, then insert new)
+    // Supabase storage (Delete old rows for this user, then insert new)
     // ──────────────────────────────────────────
-    console.log('[rcg-alpha-nav] Deleting old rows from Supabase...');
-    // 1. Clear existing rows
+    console.log(`[rcg-alpha-nav] Deleting old rows for user ${userId}...`);
+
     const [delSeriesRes, delForecastRes] = await Promise.all([
-      supabase.from('nav_series').delete().neq('dashboard_type', 'none'),
-      supabase.from('nav_forecast').delete().neq('dashboard_type', 'none'),
+      supabase.from('nav_series').delete().eq('user_id', userId),
+      supabase.from('nav_forecast').delete().eq('user_id', userId),
     ]);
 
     if (delSeriesRes.error) {
@@ -68,10 +70,10 @@ export async function POST(req: NextRequest) {
       throw new Error(`Database error (nav_forecast clear): ${delForecastRes.error.message}`);
     }
 
-    // 2. Insert series rows
+    // 2. Insert series rows with user_id
     const seriesRows = [
-      ...data3x.series.map((s: { date: string, final_nav: number }) => ({ dashboard_type: '3x', date: s.date, final_nav: s.final_nav })),
-      ...dataNet.series.map((s: { date: string, final_nav: number }) => ({ dashboard_type: 'net', date: s.date, final_nav: s.final_nav })),
+      ...data3x.series.map((s: { date: string, final_nav: number }) => ({ dashboard_type: '3x', date: s.date, final_nav: s.final_nav, user_id: userId })),
+      ...dataNet.series.map((s: { date: string, final_nav: number }) => ({ dashboard_type: 'net', date: s.date, final_nav: s.final_nav, user_id: userId })),
     ];
     console.log(`[rcg-alpha-nav] Inserting ${seriesRows.length} series rows into Supabase...`);
     const { error: seriesError } = await supabase
@@ -83,11 +85,11 @@ export async function POST(req: NextRequest) {
       throw new Error(`Database error (nav_series insert): ${seriesError.message}`);
     }
 
-    // 3. Insert forecast rows
+    // 3. Insert forecast rows with user_id
     console.log(`[rcg-alpha-nav] Inserting forecast rows into Supabase...`);
     const forecastRows = [
-      { dashboard_type: '3x', annualized_forecast: data3x.forecast, updated_at: new Date().toISOString() },
-      { dashboard_type: 'net', annualized_forecast: dataNet.forecast, updated_at: new Date().toISOString() },
+      { dashboard_type: '3x', annualized_forecast: data3x.forecast, user_id: userId, updated_at: new Date().toISOString() },
+      { dashboard_type: 'net', annualized_forecast: dataNet.forecast, user_id: userId, updated_at: new Date().toISOString() },
     ];
 
     const { error: forecastError } = await supabase
@@ -100,27 +102,24 @@ export async function POST(req: NextRequest) {
     }
 
     // ──────────────────────────────────────────
-    // Upstash Redis Caching
+    // Upstash Redis Caching (per-user keys)
     // ──────────────────────────────────────────
     console.log('[rcg-alpha-nav] Writing to Redis cache...');
     const sorted3xSeries = [...data3x.series].sort((a, b) => a.date.localeCompare(b.date));
     const sortedNetSeries = [...dataNet.series].sort((a, b) => a.date.localeCompare(b.date));
 
-    // Save directly to Redis
     try {
       await Promise.all([
-        redis.set('nav:3x:series', sorted3xSeries),
-        redis.set('nav:net:series', sortedNetSeries),
-        redis.set('nav:3x:forecast', String(data3x.forecast)),
-        redis.set('nav:net:forecast', String(dataNet.forecast)),
+        redis.set(`user:${userId}:nav:3x:series`, sorted3xSeries),
+        redis.set(`user:${userId}:nav:net:series`, sortedNetSeries),
+        redis.set(`user:${userId}:nav:3x:forecast`, String(data3x.forecast)),
+        redis.set(`user:${userId}:nav:net:forecast`, String(dataNet.forecast)),
       ]);
 
-      // Invalidate the main dashboard forecast cache so it updates
-      await invalidateCache(CACHE_KEYS.DASHBOARD_FORECAST);
+      await invalidateCache(`user:${userId}:${CACHE_KEYS.DASHBOARD_FORECAST}`);
       console.log('[rcg-alpha-nav] Redis cache updated successfully.');
     } catch (redisError) {
       console.error('[rcg-alpha-nav] Non-critical cache write failure:', redisError);
-      // Cache failure shouldn't block the user from seeing a success message, data is in Supabase
     }
 
     console.log('[rcg-alpha-nav] Revalidating paths and finishing upload.');
@@ -141,10 +140,10 @@ export async function POST(req: NextRequest) {
 
   } catch (error: unknown) {
     console.error('Error in POST /api/upload/rcg-alpha-nav:', error);
-    
+
     const msg = (error as Error).message || '';
     let userMessage = 'Something went wrong while uploading this file. Please try again or contact support.';
-    
+
     if (msg.includes('Database error')) {
       userMessage = 'We couldn\'t save this data right now. Please try again in a moment.';
     } else if (msg.includes('fetch failed') || msg.includes('timeout')) {
@@ -155,12 +154,14 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
   try {
-    // 1. Delete all rows from nav_series and nav_forecast in Supabase
+    const userId = await getUserId(req);
+
+    // 1. Delete all rows for this user from nav_series and nav_forecast
     const [resSeries, resForecast] = await Promise.all([
-      supabase.from('nav_series').delete().neq('dashboard_type', 'none'), // Deletes all rows since none is not a type
-      supabase.from('nav_forecast').delete().neq('dashboard_type', 'none'),
+      supabase.from('nav_series').delete().eq('user_id', userId),
+      supabase.from('nav_forecast').delete().eq('user_id', userId),
     ]);
 
     if (resSeries.error) {
@@ -170,13 +171,13 @@ export async function DELETE() {
       throw new Error(`Database error (nav_forecast delete): ${resForecast.error.message}`);
     }
 
-    // 2. Invalidate/Delete from Redis
+    // 2. Invalidate/Delete per-user Redis keys
     await Promise.all([
-      redis.del('nav:3x:series'),
-      redis.del('nav:net:series'),
-      redis.del('nav:3x:forecast'),
-      redis.del('nav:net:forecast'),
-      invalidateCache(CACHE_KEYS.DASHBOARD_FORECAST),
+      redis.del(`user:${userId}:nav:3x:series`),
+      redis.del(`user:${userId}:nav:net:series`),
+      redis.del(`user:${userId}:nav:3x:forecast`),
+      redis.del(`user:${userId}:nav:net:forecast`),
+      invalidateCache(`user:${userId}:${CACHE_KEYS.DASHBOARD_FORECAST}`),
     ]);
 
     revalidatePath('/api/portfolio-data');

@@ -161,8 +161,7 @@ export const TopNav: React.FC = () => {
             </div>
           )}
 
-          {/* Profile Dropdown (Temporarily Hidden) */}
-          {/*
+          {/* Profile Dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -196,7 +195,6 @@ export const TopNav: React.FC = () => {
               </div>
             )}
           </div>
-          */}
 
           {/* Mobile/Tablet: Hamburger Menu Button */}
           <div className="flex xl:hidden">

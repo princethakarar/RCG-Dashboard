@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { supabase } from '../../../lib/supabase';
 import { put } from '@vercel/blob';
+import { getUserId } from '../../../lib/getUser';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -9,6 +10,8 @@ export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
+    const userId = await getUserId(req);
+
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const parsedDataStr = formData.get('parsedData') as string;
@@ -23,34 +26,34 @@ export async function POST(req: NextRequest) {
 
     const { strategyMeta, dailyData, totals, summaryStats } = JSON.parse(parsedDataStr) as Record<string, unknown> & { strategyMeta: Record<string, string>, dailyData: Record<string, unknown>[], totals: Record<string, number>, summaryStats: Record<string, number> };
 
-    // Optional backup to Vercel Blob if file is small enough
+    // Optional backup to Vercel Blob with user-scoped path
     if (file) {
       try {
-        await put(`data/strategies/${file.name}`, file, {
+        await put(`users/${userId}/data/strategies/${file.name}`, file, {
           access: 'private',
           allowOverwrite: true,
           token: process.env.BLOB_READ_WRITE_TOKEN,
         });
-        console.log(`[strategy] Blob backup saved: ${file.name}`);
+        console.log(`[strategy] Blob backup saved: ${file.name} for user ${userId}`);
       } catch (blobErr) {
         console.error('[strategy] Blob backup failed (non-critical):', blobErr);
       }
     }
 
     // ──────────────────────────────────────────
-    // Supabase storage (Delete old rows first for this strategy, then insert new)
+    // Supabase storage (Delete old rows for this user/strategy, then insert new)
     // ──────────────────────────────────────────
-    console.log(`[strategy] Deleting old rows from Supabase for ${strategyName}...`);
-    
+    console.log(`[strategy] Deleting old rows for ${strategyName}, user ${userId}...`);
+
     const [delDataRes, delSummaryRes] = await Promise.all([
-      supabase.from('strategies_data').delete().eq('strategy_name', strategyName),
-      supabase.from('strategies_summary').delete().eq('strategy_name', strategyName),
+      supabase.from('strategies_data').delete().eq('strategy_name', strategyName).eq('user_id', userId),
+      supabase.from('strategies_summary').delete().eq('strategy_name', strategyName).eq('user_id', userId),
     ]);
 
     if (delDataRes.error) throw new Error(`Database error (strategies_data clear): ${delDataRes.error.message}`);
     if (delSummaryRes.error) throw new Error(`Database error (strategies_summary clear): ${delSummaryRes.error.message}`);
 
-    // Insert daily rows
+    // Insert daily rows with user_id
     if (dailyData && dailyData.length > 0) {
       const dataRows = dailyData.map((d: Record<string, unknown>) => ({
         strategy_name: strategyName,
@@ -59,14 +62,15 @@ export async function POST(req: NextRequest) {
         trades_count: d.trades_count,
         net_pnl: d.net_pnl,
         cumulative_pnl: d.cumulative_pnl,
-        result: d.result
+        result: d.result,
+        user_id: userId,
       }));
 
       const { error: dataError } = await supabase.from('strategies_data').insert(dataRows);
       if (dataError) throw new Error(`Database error (strategies_data insert): ${dataError.message}`);
     }
 
-    // Insert summary
+    // Insert summary with user_id
     const summaryRow = {
       strategy_name: strategyName,
       period: strategyMeta.period,
@@ -79,6 +83,7 @@ export async function POST(req: NextRequest) {
       win_rate: summaryStats.winRate,
       total_net_pnl: totals.netPnl,
       total_trades: totals.trades,
+      user_id: userId,
       updated_at: new Date().toISOString()
     };
 

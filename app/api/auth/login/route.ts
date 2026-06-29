@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSiteSettings, verifyPassword, signJWT, COOKIE_NAME } from '../../../lib/auth';
+import { supabase } from '../../../lib/supabase';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -26,13 +27,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
     }
 
-    // Sign the JWT
-    const token = await signJWT(email, settings.password_version);
+    // Look up or create user record in the users table
+    let userId: string;
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email.toLowerCase())
+      .single();
+
+    if (existingUser) {
+      userId = existingUser.id;
+    } else {
+      // First-time login: create a new user record
+      const { data: newUser, error: createError } = await supabase
+        .from('users')
+        .insert({ email: email.toLowerCase() })
+        .select('id')
+        .single();
+
+      if (createError || !newUser) {
+        console.error('[login] Failed to create user record:', createError);
+        throw new Error('Failed to create user session');
+      }
+      userId = newUser.id;
+    }
+
+    // Sign the JWT with userId
+    const token = await signJWT(email, settings.password_version, userId);
 
     // Set cookie
     const response = NextResponse.json({ success: true, message: 'Logged in successfully' });
-    
-    // Cookie options: 24 hours
+
     const isProduction = process.env.NODE_ENV === 'production';
     response.cookies.set(COOKIE_NAME, token, {
       httpOnly: true,

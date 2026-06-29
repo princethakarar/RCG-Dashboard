@@ -18,6 +18,7 @@ export interface SiteSettings {
 export interface JWTPayload {
   email: string;
   passwordVersion: number;
+  userId: string;
 }
 
 /**
@@ -129,8 +130,8 @@ export function verifyPassword(password: string, hash: string): boolean {
 /**
  * Generates a JWT token for the user session.
  */
-export async function signJWT(email: string, passwordVersion: number): Promise<string> {
-  return new SignJWT({ email, passwordVersion })
+export async function signJWT(email: string, passwordVersion: number, userId: string): Promise<string> {
+  return new SignJWT({ email, passwordVersion, userId })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('24h') // 24 hours session validity

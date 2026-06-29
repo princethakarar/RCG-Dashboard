@@ -7,6 +7,7 @@ const COOKIE_NAME = 'auth_token';
 export interface JWTPayload {
   email: string;
   passwordVersion: number;
+  userId: string;
 }
 
 /**

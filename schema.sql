@@ -131,3 +131,143 @@ CREATE TABLE IF NOT EXISTS max_upside_downside (
 CREATE INDEX IF NOT EXISTS idx_max_upside_downside_date ON max_upside_downside(date);
 ALTER TABLE max_upside_downside ENABLE ROW LEVEL SECURITY;
 
+-- =============================================================================
+-- Row-Level User Isolation (clean slate)
+-- =============================================================================
+-- 1. Clear all existing data since we're starting fresh
+DELETE FROM trading_data;
+DELETE FROM portfolio_3x;
+DELETE FROM portfolio_net_asset;
+DELETE FROM nav_series;
+DELETE FROM nav_forecast;
+DELETE FROM strategies_data;
+DELETE FROM strategies_summary;
+DELETE FROM max_upside_downside;
+
+-- 2. Users table mapping emails to UUIDs for custom JWT auth
+CREATE TABLE IF NOT EXISTS users (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email           TEXT NOT NULL UNIQUE,
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+-- 3. Add user_id to every data table + FK + index (NOT NULL since no legacy data)
+
+ALTER TABLE trading_data ADD COLUMN user_id UUID NOT NULL REFERENCES users(id);
+CREATE INDEX IF NOT EXISTS idx_trading_data_user_id ON trading_data(user_id);
+
+ALTER TABLE portfolio_3x ADD COLUMN user_id UUID NOT NULL REFERENCES users(id);
+CREATE INDEX IF NOT EXISTS idx_portfolio_3x_user_id ON portfolio_3x(user_id);
+
+ALTER TABLE portfolio_net_asset ADD COLUMN user_id UUID NOT NULL REFERENCES users(id);
+CREATE INDEX IF NOT EXISTS idx_portfolio_net_asset_user_id ON portfolio_net_asset(user_id);
+
+ALTER TABLE nav_series ADD COLUMN user_id UUID NOT NULL REFERENCES users(id);
+CREATE INDEX IF NOT EXISTS idx_nav_series_user_id ON nav_series(user_id);
+
+ALTER TABLE nav_forecast ADD COLUMN user_id UUID NOT NULL REFERENCES users(id);
+CREATE INDEX IF NOT EXISTS idx_nav_forecast_user_id ON nav_forecast(user_id);
+
+ALTER TABLE strategies_data ADD COLUMN user_id UUID NOT NULL REFERENCES users(id);
+CREATE INDEX IF NOT EXISTS idx_strategies_data_user_id ON strategies_data(user_id);
+
+ALTER TABLE strategies_summary ADD COLUMN user_id UUID NOT NULL REFERENCES users(id);
+CREATE INDEX IF NOT EXISTS idx_strategies_summary_user_id ON strategies_summary(user_id);
+
+ALTER TABLE max_upside_downside ADD COLUMN user_id UUID NOT NULL REFERENCES users(id);
+CREATE INDEX IF NOT EXISTS idx_max_upside_downside_user_id ON max_upside_downside(user_id);
+
+-- 4. Update UNIQUE constraints to be per-user
+--    (drop old global constraints, add new ones scoped to user_id)
+
+ALTER TABLE trading_data DROP CONSTRAINT IF EXISTS trading_data_date_key;
+ALTER TABLE trading_data ADD CONSTRAINT trading_data_user_date_unique UNIQUE (user_id, date);
+
+ALTER TABLE portfolio_3x DROP CONSTRAINT IF EXISTS portfolio_3x_date_key;
+ALTER TABLE portfolio_3x ADD CONSTRAINT portfolio_3x_user_date_unique UNIQUE (user_id, date);
+
+ALTER TABLE portfolio_net_asset DROP CONSTRAINT IF EXISTS portfolio_net_asset_date_key;
+ALTER TABLE portfolio_net_asset ADD CONSTRAINT portfolio_net_asset_user_date_unique UNIQUE (user_id, date);
+
+ALTER TABLE nav_series DROP CONSTRAINT IF EXISTS nav_series_dashboard_type_date_key;
+ALTER TABLE nav_series ADD CONSTRAINT nav_series_user_type_date_unique UNIQUE (user_id, dashboard_type, date);
+
+ALTER TABLE strategies_data DROP CONSTRAINT IF EXISTS strategies_data_strategy_name_date_key;
+ALTER TABLE strategies_data ADD CONSTRAINT strategies_data_user_name_date_unique UNIQUE (user_id, strategy_name, date);
+
+ALTER TABLE max_upside_downside DROP CONSTRAINT IF EXISTS max_upside_downside_date_key;
+ALTER TABLE max_upside_downside ADD CONSTRAINT max_upside_downside_user_date_unique UNIQUE (user_id, date);
+
+-- 5. RLS Policies
+--    Only allow operations where user_id matches the authenticated user.
+--    Uses a custom session variable set server-side.
+CREATE FUNCTION public.current_user_id() RETURNS UUID
+LANGUAGE SQL STABLE AS $$
+  SELECT NULLIF(current_setting('app.current_user_id', TRUE), '')::UUID;
+$$;
+
+-- trading_data
+ALTER TABLE trading_data ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS trading_data_self ON trading_data;
+CREATE POLICY trading_data_self ON trading_data
+  USING (user_id = current_user_id())
+  WITH CHECK (user_id = current_user_id());
+
+-- portfolio_3x
+ALTER TABLE portfolio_3x ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS portfolio_3x_self ON portfolio_3x;
+CREATE POLICY portfolio_3x_self ON portfolio_3x
+  USING (user_id = current_user_id())
+  WITH CHECK (user_id = current_user_id());
+
+-- portfolio_net_asset
+ALTER TABLE portfolio_net_asset ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS portfolio_net_asset_self ON portfolio_net_asset;
+CREATE POLICY portfolio_net_asset_self ON portfolio_net_asset
+  USING (user_id = current_user_id())
+  WITH CHECK (user_id = current_user_id());
+
+-- nav_series
+ALTER TABLE nav_series ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS nav_series_self ON nav_series;
+CREATE POLICY nav_series_self ON nav_series
+  USING (user_id = current_user_id())
+  WITH CHECK (user_id = current_user_id());
+
+-- nav_forecast
+ALTER TABLE nav_forecast ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS nav_forecast_self ON nav_forecast;
+CREATE POLICY nav_forecast_self ON nav_forecast
+  USING (user_id = current_user_id())
+  WITH CHECK (user_id = current_user_id());
+
+-- strategies_data
+ALTER TABLE strategies_data ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS strategies_data_self ON strategies_data;
+CREATE POLICY strategies_data_self ON strategies_data
+  USING (user_id = current_user_id())
+  WITH CHECK (user_id = current_user_id());
+
+-- strategies_summary
+ALTER TABLE strategies_summary ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS strategies_summary_self ON strategies_summary;
+CREATE POLICY strategies_summary_self ON strategies_summary
+  USING (user_id = current_user_id())
+  WITH CHECK (user_id = current_user_id());
+
+-- max_upside_downside
+ALTER TABLE max_upside_downside ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS max_upside_downside_self ON max_upside_downside;
+CREATE POLICY max_upside_downside_self ON max_upside_downside
+  USING (user_id = current_user_id())
+  WITH CHECK (user_id = current_user_id());
+
+-- users table: each user can only see their own record
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS users_self ON users;
+CREATE POLICY users_self ON users
+  USING (id = current_user_id())
+  WITH CHECK (id = current_user_id());
+

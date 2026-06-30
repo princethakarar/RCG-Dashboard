@@ -5,14 +5,17 @@ import { useMaxUpsideDownside } from '../../hooks/useMaxUpsideDownside';
 import { TopNav } from '../../components/layout/TopNav';
 import { Footer } from '../../components/layout/Footer';
 import { MaxUpsideDownsideChart } from '../../components/portfolio/MaxUpsideDownsideChart';
+import { PLvsLOTChart } from '../../components/portfolio/PLvsLOTChart';
+import { usePositionData } from '../../hooks/usePositionData';
 import { FolderOpen, ArrowRight, ShieldAlert, Loader } from 'lucide-react';
 import Link from 'next/link';
 
 export default function StatisticsPage() {
-  const { data, loading, error, refetch } = useMaxUpsideDownside();
+  const { data: maxData, loading: maxLoading, error: maxError, refetch: maxRefetch } = useMaxUpsideDownside();
+  const { data: positionData, loading: positionLoading, error: positionError, refetch: positionRefetch } = usePositionData();
 
   const renderContent = () => {
-    if (loading) {
+    if (maxLoading || positionLoading) {
       return (
         <div className="flex-1 flex flex-col items-center justify-center py-40 select-none">
           <Loader size={36} className="text-[#8B0A3D] animate-spin" />
@@ -23,16 +26,16 @@ export default function StatisticsPage() {
       );
     }
 
-    if (error) {
+    if (maxError || positionError) {
       return (
         <div className="flex-1 flex flex-col items-center justify-center py-20 px-8 text-center max-w-md mx-auto select-none">
           <ShieldAlert size={36} className="text-red-600 mb-3" />
           <h3 className="text-base font-extrabold text-[#1A0A10] tracking-tight">Error Loading Statistics</h3>
           <p className="text-xs text-[#9B8A92] mt-1.5 leading-relaxed font-sans">
-            {error}
+            {maxError || positionError}
           </p>
           <button
-            onClick={() => refetch()}
+            onClick={() => { maxRefetch(); positionRefetch(); }}
             className="mt-5 px-4 py-2 text-xs font-bold text-white bg-[#8B0A3D] hover:bg-[#6B0830] rounded-xl transition-all shadow-sm active:scale-[0.98]"
           >
             Try Again
@@ -41,7 +44,7 @@ export default function StatisticsPage() {
       );
     }
 
-    if (data.length === 0) {
+    if (maxData.length === 0 && positionData.length === 0) {
       return (
         <div className="flex-1 flex flex-col items-center justify-center py-20 px-8 text-center max-w-lg mx-auto select-none animate-fade-in">
           <FolderOpen size={48} className="text-[#8B0A3D] mb-4" />
@@ -49,7 +52,7 @@ export default function StatisticsPage() {
             No Statistics Data Found
           </h3>
           <p className="text-xs text-[#9B8A92] mt-2 max-w-xs mx-auto leading-relaxed font-sans">
-            Upload the Max Upside / Downside Excel file in the Data Ingestion portal.
+            Upload the required Excel files in the Data Ingestion portal.
           </p>
           <Link
             href="/upload"
@@ -64,7 +67,8 @@ export default function StatisticsPage() {
 
     return (
       <div className="w-full space-y-6">
-        <MaxUpsideDownsideChart data={data} />
+        {maxData.length > 0 && <MaxUpsideDownsideChart data={maxData} />}
+        {positionData.length > 0 && <PLvsLOTChart data={positionData} />}
       </div>
     );
   };
@@ -84,7 +88,7 @@ export default function StatisticsPage() {
               Statistics
             </h1>
             <p className="text-xs sm:text-[13px] font-normal text-[#9B8A92] mt-1 font-sans">
-              Date-wise Max Upside &amp; Downside risk analysis mapping.
+              Advanced risk analysis mapping and performance tracking parameters.
             </p>
           </div>
         </div>

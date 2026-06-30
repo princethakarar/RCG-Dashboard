@@ -397,6 +397,76 @@ self.addEventListener('message', (event) => {
       return;
     }
 
+    if (type === 'parse_position') {
+      const wb = XLSX.read(arrayBuffer, { type: 'array', cellDates: true, cellFormula: false });
+      
+      const sheetName = wb.SheetNames.find(s => s === 'SUMMERY');
+      if (!sheetName) {
+        throw new Error('Could not find a sheet named "SUMMERY" (exact spelling required).');
+      }
+      
+      const ws = wb.Sheets[sheetName];
+      // get data, evaluating formulas by relying on cellFormula: false and data_only equivalents
+      const rawData = XLSX.utils.sheet_to_json(ws, { header: 1 }) as ExcelCellValue[][];
+      
+      const parsedRows: Record<string, unknown>[] = [];
+      let stoppedReason = '';
+      
+      // Start parsing at row 2 (index 1)
+      for (let i = 1; i < rawData.length; i++) {
+        const row = rawData[i] || [];
+        
+        // Stop immediately if any cell in A-F has an error string starting with #
+        const hasError = row.some((cell, colIdx) => {
+          if (colIdx > 5) return false; // Only check A-F
+          return typeof cell === 'string' && cell.startsWith('#');
+        });
+        
+        if (hasError) {
+          stoppedReason = `stopped at row ${i + 1}: contains error value (e.g. #REF!)`;
+          break;
+        }
+
+        const dateStr = parseExcelDate(row[0]);
+        const qty = row[1];
+        const lot = parseFloatValueOrNull(row[2]);
+        const pnlDaily = row[3];
+        const pnlPerQty = row[4];
+        const pnlLot = parseFloatValueOrNull(row[5]);
+
+        // Validate all required columns (A-F) are non-empty and date is parseable
+        if (!dateStr || 
+            qty === undefined || qty === null || qty === '' ||
+            lot === null || 
+            pnlDaily === undefined || pnlDaily === null || pnlDaily === '' ||
+            pnlPerQty === undefined || pnlPerQty === null || pnlPerQty === '' ||
+            pnlLot === null) {
+          stoppedReason = `stopped at row ${i + 1}: missing required data or invalid date`;
+          break;
+        }
+
+        parsedRows.push({
+          date: dateStr,
+          lot: lot,
+          pnl_lot: pnlLot
+        });
+      }
+
+      console.log(`Extracted ${parsedRows.length} valid rows from SUMMERY. ${stoppedReason}`);
+
+      self.postMessage({
+        success: true,
+        data: {
+          parsedRows,
+          summary: {
+            totalValidRows: parsedRows.length,
+            stoppedReason: stoppedReason || 'Reached end of data without encountering invalid rows.'
+          }
+        }
+      });
+      return;
+    }
+
     throw new Error(`Unknown worker job type: ${type}`);
   } catch (error: unknown) {
     self.postMessage({

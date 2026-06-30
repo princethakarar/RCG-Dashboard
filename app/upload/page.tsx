@@ -8,8 +8,10 @@ import { UploadZone } from '../components/upload/UploadZone';
 import { NavUploadZone } from '../components/upload/NavUploadZone';
 import { StrategyUploadZone } from '../components/upload/StrategyUploadZone';
 import { MaxUpsideDownsideUploadZone } from '../components/upload/MaxUpsideDownsideUploadZone';
+import { PositionUploadZone } from '../components/upload/PositionUploadZone';
 import { useStrategyData } from '../hooks/useStrategyData';
 import { useMaxUpsideDownside } from '../hooks/useMaxUpsideDownside';
+import { usePositionData } from '../hooks/usePositionData';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 
 export default function UploadPage() {
@@ -17,6 +19,7 @@ export default function UploadPage() {
   const { dailyData: strategyData, refetch: refetchStrategy } = useStrategyData('3 Red Candle');
   const { dailyData: soldierData, refetch: refetchSoldier } = useStrategyData('Soldier Pattern');
   const { data: maxUpsideDownsideData, refetch: refetchMaxUpsideDownside } = useMaxUpsideDownside();
+  const { data: positionData, refetch: refetchPosition } = usePositionData();
 
   const handleUploadSuccess = () => {
     // Immediate refetch
@@ -24,12 +27,14 @@ export default function UploadPage() {
     refetchStrategy();
     refetchSoldier();
     refetchMaxUpsideDownside();
+    refetchPosition();
     // Safety-net second refetch after 3s to catch propagation delays
     setTimeout(() => {
       refetch();
       refetchStrategy();
       refetchSoldier();
       refetchMaxUpsideDownside();
+      refetchPosition();
     }, 3000);
   };
 
@@ -76,6 +81,17 @@ export default function UploadPage() {
       rowCount: sorted.length,
     }];
   }, [maxUpsideDownsideData]);
+
+  const positionFiles = React.useMemo(() => {
+    if (!positionData || positionData.length === 0) return [];
+    const sorted = [...positionData].sort((a, b) => a.date.localeCompare(b.date));
+    return [{
+      name: 'Position_File_Summery.xlsx',
+      startDate: sorted[0].date,
+      endDate: sorted[sorted.length - 1].date,
+      rowCount: sorted.length,
+    }];
+  }, [positionData]);
 
 
   return (
@@ -190,6 +206,23 @@ export default function UploadPage() {
             <CardContent className="p-5 pt-0">
               <MaxUpsideDownsideUploadZone 
                 files={maxUpsideDownsideFiles}
+                onUploadSuccess={handleUploadSuccess} 
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="border border-[#EDE0E6] shadow-none rounded-2xl bg-white">
+            <CardHeader className="p-5 pb-2">
+              <CardTitle className="text-sm font-bold text-[#1A0A10] uppercase tracking-wide">
+                Position File (SUMMERY)
+              </CardTitle>
+              <CardDescription className="text-xs text-[#9B8A92] font-semibold leading-relaxed">
+                Ingest position data containing P&amp;L LOT stats.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-5 pt-0">
+              <PositionUploadZone 
+                files={positionFiles}
                 onUploadSuccess={handleUploadSuccess} 
               />
             </CardContent>

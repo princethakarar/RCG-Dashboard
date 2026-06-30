@@ -131,6 +131,20 @@ CREATE TABLE IF NOT EXISTS max_upside_downside (
 CREATE INDEX IF NOT EXISTS idx_max_upside_downside_date ON max_upside_downside(date);
 ALTER TABLE max_upside_downside ENABLE ROW LEVEL SECURITY;
 
+-- Position Data (P&L vs LOT)
+CREATE TABLE IF NOT EXISTS position_data (
+  id              SERIAL PRIMARY KEY,
+  date            DATE NOT NULL,
+  lot             NUMERIC(15, 4) NOT NULL,
+  pnl_lot         NUMERIC(15, 4) NOT NULL,
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_position_data_date ON position_data(date);
+ALTER TABLE position_data ENABLE ROW LEVEL SECURITY;
+
 -- =============================================================================
 -- Row-Level User Isolation (clean slate)
 -- =============================================================================
@@ -143,6 +157,7 @@ DELETE FROM nav_forecast;
 DELETE FROM strategies_data;
 DELETE FROM strategies_summary;
 DELETE FROM max_upside_downside;
+DELETE FROM position_data;
 
 -- 2. Users table mapping emails to UUIDs for custom JWT auth
 CREATE TABLE IF NOT EXISTS users (
@@ -179,6 +194,9 @@ CREATE INDEX IF NOT EXISTS idx_strategies_summary_user_id ON strategies_summary(
 ALTER TABLE max_upside_downside ADD COLUMN user_id UUID NOT NULL REFERENCES users(id);
 CREATE INDEX IF NOT EXISTS idx_max_upside_downside_user_id ON max_upside_downside(user_id);
 
+ALTER TABLE position_data ADD COLUMN user_id UUID NOT NULL REFERENCES users(id);
+CREATE INDEX IF NOT EXISTS idx_position_data_user_id ON position_data(user_id);
+
 -- 4. Update UNIQUE constraints to be per-user
 --    (drop old global constraints, add new ones scoped to user_id)
 
@@ -199,6 +217,9 @@ ALTER TABLE strategies_data ADD CONSTRAINT strategies_data_user_name_date_unique
 
 ALTER TABLE max_upside_downside DROP CONSTRAINT IF EXISTS max_upside_downside_date_key;
 ALTER TABLE max_upside_downside ADD CONSTRAINT max_upside_downside_user_date_unique UNIQUE (user_id, date);
+
+ALTER TABLE position_data DROP CONSTRAINT IF EXISTS position_data_date_key;
+ALTER TABLE position_data ADD CONSTRAINT position_data_user_date_unique UNIQUE (user_id, date);
 
 -- 5. RLS Policies
 --    Only allow operations where user_id matches the authenticated user.
@@ -261,6 +282,13 @@ CREATE POLICY strategies_summary_self ON strategies_summary
 ALTER TABLE max_upside_downside ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS max_upside_downside_self ON max_upside_downside;
 CREATE POLICY max_upside_downside_self ON max_upside_downside
+  USING (user_id = current_user_id())
+  WITH CHECK (user_id = current_user_id());
+
+-- position_data
+ALTER TABLE position_data ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS position_data_self ON position_data;
+CREATE POLICY position_data_self ON position_data
   USING (user_id = current_user_id())
   WITH CHECK (user_id = current_user_id());
 

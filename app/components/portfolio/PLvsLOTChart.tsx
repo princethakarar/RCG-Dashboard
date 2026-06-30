@@ -4,7 +4,7 @@ import React from 'react';
 import { ResponsiveContainer, LineChart, XAxis, YAxis, CartesianGrid, Tooltip, Line } from 'recharts';
 import { formatINR } from '../../lib/formatters';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
-import { useBreakpoint, getXAxisTickInterval, getChartTickFontSize } from '../../hooks/useBreakpoint';
+import { useBreakpoint, getChartTickFontSize } from '../../hooks/useBreakpoint';
 import { PositionDataRow } from '../../hooks/usePositionData';
 
 interface PLvsLOTChartProps {
@@ -14,8 +14,6 @@ interface PLvsLOTChartProps {
 export const PLvsLOTChart: React.FC<PLvsLOTChartProps> = ({ data }) => {
   const breakpoint = useBreakpoint();
   const tickFontSize = getChartTickFontSize(breakpoint);
-
-  const xInterval = getXAxisTickInterval(data.length, breakpoint);
 
   const chartData = data.map(row => {
     // Trim out time and convert to Date object if needed, but since we format it:
@@ -35,9 +33,9 @@ export const PLvsLOTChart: React.FC<PLvsLOTChartProps> = ({ data }) => {
     return isNegative ? `-${formatted}` : formatted;
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Record<string, unknown>[] }) => {
     if (active && payload && payload.length) {
-      const dataPoint = payload[0].payload;
+      const dataPoint = payload[0].payload as { displayDate: string; lot: number; pnlLot: number };
       const isNegative = dataPoint.pnlLot < 0;
       
       return (

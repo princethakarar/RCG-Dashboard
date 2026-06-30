@@ -154,7 +154,7 @@ export const PositionUploadZone: React.FC<PositionUploadZoneProps> = ({ onUpload
               Drag & Drop Position Excel File
             </h4>
             <p className="text-xs text-[#9B8A92] mt-1 max-w-xs leading-relaxed">
-              Accepts <span className="font-bold">.xlsx</span> files only. Must contain sheet named "SUMMERY".
+              Accepts <span className="font-bold">.xlsx</span> files only. Must contain sheet named &quot;SUMMERY&quot;.
             </p>
             <span className="mt-4 px-3 py-1.5 bg-[#8B0A3D] text-white text-[11px] font-extrabold rounded-lg hover:bg-[#6B0830] transition-colors shadow-sm">
               Select File From Computer

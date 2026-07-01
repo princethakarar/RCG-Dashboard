@@ -93,11 +93,15 @@ export const TopNav: React.FC = () => {
     { name: 'Strategies', path: '/strategies' },
     { name: 'Statistics', path: '/admin/statistics' },
     { name: 'Upload Data', path: '/upload' },
+    { name: 'Backoffice', path: '/backoffice' },
   ];
 
   const checkActive = (path: string) => {
     if (path === '/intern-portfolio') {
       return pathname === '/' || pathname === '/intern-portfolio';
+    }
+    if (path === '/backoffice') {
+      return pathname.startsWith('/backoffice');
     }
     return pathname === path;
   };

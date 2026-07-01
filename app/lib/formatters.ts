@@ -47,3 +47,26 @@ export const pnlClass = (v: number) => v >= 0 ? 'text-green-600' : 'text-red-600
 
 // Tailwind background and border class for P&L status boxes
 export const pnlBgClass = (v: number) => v >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200';
+
+// Mask Indian Mobile Number (e.g. +91 XXXXXX7980 or 98XXXXXX45)
+export const maskMobile = (mobile: string): string => {
+  if (!mobile) return '';
+  const clean = mobile.replace(/[^0-9+]/g, '');
+  if (clean.length < 10) return mobile;
+  
+  // Show first 2 (if plain 10 digit) or first few (+91) and last 4
+  const last4 = clean.slice(-4);
+  const firstPart = clean.slice(0, clean.length - 10 + 2); // e.g. "+91 98"
+  return `${firstPart}${'X'.repeat(4)}${last4}`;
+};
+
+// Mask Email Address (e.g. ya***@gmail.com)
+export const maskEmail = (email: string): string => {
+  if (!email || !email.includes('@')) return email;
+  const [local, domain] = email.split('@');
+  if (local.length <= 2) {
+    return `${local}***@${domain}`;
+  }
+  const first2 = local.slice(0, 2);
+  return `${first2}${'*'.repeat(Math.max(1, local.length - 2))}@${domain}`;
+};

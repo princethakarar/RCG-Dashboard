@@ -299,3 +299,50 @@ CREATE POLICY users_self ON users
   USING (id = current_user_id())
   WITH CHECK (id = current_user_id());
 
+-- =============================================================================
+-- Backoffice Clients & Data
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS clients (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id),
+  name TEXT NOT NULL,
+  mobile TEXT NOT NULL,
+  email TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (user_id, mobile),
+  UNIQUE (user_id, email)
+);
+
+CREATE TABLE IF NOT EXISTS client_data (
+  id SERIAL PRIMARY KEY,
+  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  vix_close NUMERIC(15, 4),
+  vix_change_pct NUMERIC(15, 4),
+  nifty_change_pct NUMERIC(15, 4),
+  net_mtm NUMERIC(15, 4),
+  running_pl NUMERIC(15, 4),
+  net_margin NUMERIC(15, 4),
+  running_roi NUMERIC(15, 4),
+  day_type TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (client_id, date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_clients_user_id ON clients(user_id);
+CREATE INDEX IF NOT EXISTS idx_client_data_client_id ON client_data(client_id);
+CREATE INDEX IF NOT EXISTS idx_client_data_date ON client_data(date);
+
+ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS clients_self ON clients;
+CREATE POLICY clients_self ON clients
+  USING (user_id = current_user_id())
+  WITH CHECK (user_id = current_user_id());
+
+ALTER TABLE client_data ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS client_data_self ON client_data;
+CREATE POLICY client_data_self ON client_data
+  USING (client_id IN (SELECT id FROM clients WHERE user_id = current_user_id()))
+  WITH CHECK (client_id IN (SELECT id FROM clients WHERE user_id = current_user_id()));

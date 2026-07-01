@@ -44,13 +44,17 @@ export const PeriodicReturnsCards: React.FC<PeriodicReturnsCardsProps> = ({ data
   const last5Rows = sorted.slice(-5);
   const lastWeekReturn = last5Rows.reduce((sum, r) => sum + r.roiOnDeposit, 0);
 
-  // 3. Last Month Return: Sum Col C (3x) / Col D (Net Asset) of all June 2026 rows
-  const juneRows = sorted.filter(r => r.date.startsWith('2026-06'));
-  const lastMonthReturn = juneRows.reduce((sum, r) => sum + r.roiOnDeposit, 0);
+  // Extract current year and month from the latest date in the dataset
+  const lastYear = lastDateStr.substring(0, 4); // e.g. "2026"
+  const lastMonth = lastDateStr.substring(0, 7); // e.g. "2026-06"
 
-  // 4. Last Year Return: Sum Col C (3x) / Col D (Net Asset) of all 2026 rows
-  const yearRows = sorted.filter(r => r.date.startsWith('2026'));
-  const lastYearReturn = yearRows.reduce((sum, r) => sum + r.roiOnDeposit, 0);
+  // 3. Last Month Return: Sum of daily returns for the current month
+  const currentMonthRows = sorted.filter(r => r.date.startsWith(lastMonth));
+  const lastMonthReturn = currentMonthRows.reduce((sum, r) => sum + r.roiOnDeposit, 0);
+
+  // 4. Last Year Return: Sum of daily returns for the current year
+  const currentYearRows = sorted.filter(r => r.date.startsWith(lastYear));
+  const lastYearReturn = currentYearRows.reduce((sum, r) => sum + r.roiOnDeposit, 0);
 
   // 5. Since Inception: Col D (3x) / Col C (Net Asset) of last row
   const sinceInception = lastRow.runningROI;
@@ -69,12 +73,12 @@ export const PeriodicReturnsCards: React.FC<PeriodicReturnsCardsProps> = ({ data
     {
       label: 'CURRENT MONTH RETURN',
       value: lastMonthReturn,
-      tooltip: 'Sum of daily returns of all trading days in the current calendar month of data (June 2026).',
+      tooltip: `Sum of daily returns of all trading days in the current calendar month of data (${lastMonth}).`,
     },
     {
       label: 'CURRENT YEAR RETURN',
       value: lastYearReturn,
-      tooltip: 'Sum of daily returns of all trading days in the current year 2026.',
+      tooltip: `Sum of daily returns of all trading days in the current year (${lastYear}).`,
     },
     {
       label: 'SINCE INCEPTION',

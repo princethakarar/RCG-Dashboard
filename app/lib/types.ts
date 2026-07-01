@@ -21,6 +21,7 @@ export interface PortfolioRow {
   high: number | null;
   low: number | null;
   close: number | null;
+  vixClose: number | null;       // India VIX Close
 }
 
 export interface BucketData {

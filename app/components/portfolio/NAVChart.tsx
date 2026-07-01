@@ -25,16 +25,33 @@ export const NAVChart: React.FC<NAVChartProps> = ({ series }) => {
     if (!series || series.length === 0) return [];
     const values = series.map(s => s.final_nav).filter(v => typeof v === 'number' && !isNaN(v));
     if (values.length === 0) return [];
+    
     const min = Math.min(...values);
     const max = Math.max(...values);
     
-    const startVal = Math.floor(min * 2);
-    const endVal = Math.ceil(max * 2);
-    const ticks = [];
-    for (let i = startVal; i <= endVal; i++) {
-      ticks.push(i / 2);
+    // Safety check: if values are exactly the same, just return a few ticks around it
+    if (min === max) {
+      return [min * 0.9, min, min * 1.1];
     }
-    return ticks;
+
+    const range = max - min;
+    const roughStep = range / 5;
+    
+    // Calculate a clean step size (e.g. 100, 500, 1000, 50000, etc)
+    const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+    let step = magnitude;
+    if (roughStep / magnitude >= 5) step = magnitude * 5;
+    else if (roughStep / magnitude >= 2) step = magnitude * 2;
+    
+    const startVal = Math.floor(min / step) * step;
+    const endVal = Math.ceil(max / step) * step;
+    
+    const ticks = [];
+    for (let i = startVal; i <= endVal + (step / 10); i += step) {
+      ticks.push(i);
+    }
+    
+    return ticks.length > 0 ? ticks : [min, max];
   }, [series]);
 
   const formatNAVValue = (val: number) => {

@@ -26,6 +26,11 @@ export const RunningROIChart: React.FC<RunningROIChartProps> = ({ data }) => {
     displayDate: formatDate(row.date),
   }));
 
+  const vixValues = chartData.map(r => r.vixClose).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
+  const hasVixData = vixValues.length > 0;
+  const vixMin = hasVixData ? Math.floor(Math.min(...vixValues) / 5) * 5 : 0;
+  const vixMax = hasVixData ? Math.ceil(Math.max(...vixValues) / 5) * 5 : 20;
+
   const lastPortfolioRow = [...data].reverse().find(r => r.runningROI !== null && !isNaN(r.runningROI));
   const lastNiftyRow = [...data].reverse().find(r => r.niftyContinue !== null && !isNaN(r.niftyContinue));
 
@@ -63,6 +68,17 @@ export const RunningROIChart: React.FC<RunningROIChartProps> = ({ data }) => {
                 </span>
                 <span className={`font-bold tabular-nums ${niftyVal >= 0 ? 'text-[#2563EB]' : 'text-[#DC2626]'}`}>
                   {niftyVal != null ? `${niftyVal >= 0 ? '+' : ''}${niftyVal.toFixed(2)}%` : 'N/A'}
+                </span>
+              </div>
+            )}
+            {payload.find((p: any) => p.dataKey === 'vixClose')?.value !== undefined && (
+              <div className="flex items-center justify-between gap-8 pt-1 border-t border-[#F3E8EC] mt-1">
+                <span className="flex items-center gap-1.5 font-semibold text-[#9B8A92]">
+                  <span className="w-2 h-2 rounded-full bg-[#EAB308] opacity-70 inline-block"></span>
+                  India VIX (Close):
+                </span>
+                <span className="font-bold tabular-nums text-[#4B5563]">
+                  {payload.find((p: any) => p.dataKey === 'vixClose')?.value.toFixed(2)}
                 </span>
               </div>
             )}
@@ -109,6 +125,7 @@ export const RunningROIChart: React.FC<RunningROIChartProps> = ({ data }) => {
                   />
                   
                   <YAxis 
+                    yAxisId="left"
                     tick={{ fill: '#9B8A92', fontSize: tickFontSize, fontFamily: 'Inter' }}
                     axisLine={false}
                     tickLine={false}
@@ -116,6 +133,19 @@ export const RunningROIChart: React.FC<RunningROIChartProps> = ({ data }) => {
                     width={55}
                     tickFormatter={(v) => `${v}%`}
                   />
+
+                  {hasVixData && (
+                    <YAxis 
+                      yAxisId="right"
+                      orientation="right"
+                      domain={[vixMin, vixMax]}
+                      tick={{ fill: '#9B8A92', fontSize: tickFontSize, fontFamily: 'Inter' }}
+                      axisLine={false}
+                      tickLine={false}
+                      dx={4}
+                      width={40}
+                    />
+                  )}
 
                   <Tooltip content={<CustomTooltip />} />
                   
@@ -127,9 +157,10 @@ export const RunningROIChart: React.FC<RunningROIChartProps> = ({ data }) => {
                     wrapperStyle={{ fontSize: tickFontSize, fontFamily: 'Inter', fontWeight: 600, color: '#9B8A92' }}
                   />
 
-                  <ReferenceLine y={0} stroke="#EDE0E6" strokeDasharray="3 6" strokeWidth={1} />
+                  <ReferenceLine yAxisId="left" y={0} stroke="#EDE0E6" strokeDasharray="3 6" strokeWidth={1} />
 
                   <Line 
+                    yAxisId="left"
                     name={isNetAsset ? 'Portfolio Net Asset (Running ROI)' : 'Portfolio 3x (Running ROI)'}
                     type="monotone" 
                     dataKey="runningROI" 
@@ -140,6 +171,7 @@ export const RunningROIChart: React.FC<RunningROIChartProps> = ({ data }) => {
                   />
 
                   <Line 
+                    yAxisId="left"
                     name="Nifty (Cumulative %)"
                     type="monotone" 
                     dataKey="niftyContinue" 
@@ -150,6 +182,21 @@ export const RunningROIChart: React.FC<RunningROIChartProps> = ({ data }) => {
                     dot={{ r: 2, fill: '#2563EB', strokeWidth: 1 }}
                     activeDot={{ r: 4 }}
                   />
+
+                  {hasVixData && (
+                    <Line 
+                      yAxisId="right"
+                      name="India VIX (Close)"
+                      type="monotone" 
+                      dataKey="vixClose" 
+                      stroke="#EAB308" 
+                      strokeWidth={1.5}
+                      strokeOpacity={0.75}
+                      connectNulls={true}
+                      dot={false}
+                      activeDot={{ r: 4 }}
+                    />
+                  )}
                 </ComposedChart>
               </ResponsiveContainer>
             </div>

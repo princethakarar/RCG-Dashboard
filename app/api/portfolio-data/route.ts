@@ -49,6 +49,7 @@ function map3xRow(row: Portfolio3xRow): PortfolioRow {
     high: row.high,
     low: row.low,
     close: row.close,
+    vixClose: null,
   };
 }
 
@@ -64,6 +65,7 @@ function mapNetAssetRow(row: PortfolioNetAssetRow): PortfolioRow {
     high: row.high,
     low: row.low,
     close: row.close,
+    vixClose: null,
   };
 }
 

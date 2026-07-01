@@ -3,16 +3,15 @@
 import React from 'react';
 import { PieChart, Pie } from 'recharts';
 import { PortfolioMetrics } from '../../lib/types';
-import { formatDate, formatDateFull } from '../../lib/formatters';
+import { formatDate } from '../../lib/formatters';
 import { Card, CardHeader, CardDescription, CardContent } from '../ui/card';
-import { 
+import {
   TrendingUp, 
   Target, 
   Calendar, 
   Activity, 
   BarChart2,
-  TrendingDown,
-  Clock
+  TrendingDown
 } from 'lucide-react';
 
 interface KPICardsProps {
@@ -28,9 +27,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ metrics, isNetAsset = false 
     avgAbsDailyROI,
     avgNiftySwing,
     winDays,
-    dateRange,
-    highestPoint,
-    avgDaysToNewHigh
+    dateRange
   } = metrics;
 
   const formatWithPlus = (val: number) => {

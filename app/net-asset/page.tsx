@@ -11,9 +11,8 @@ import { KPICards } from '../components/portfolio/KPICards';
 import { RunningROIChart } from '../components/portfolio/RunningROIChart';
 import { DailyReturnChart } from '../components/portfolio/DailyReturnChart';
 import { NetMTMChart } from '../components/portfolio/NetMTMChart';
-import { WinRatioCard } from '../components/portfolio/WinRatioCard';
-import { WorkingDaysCard } from '../components/portfolio/WorkingDaysCard';
-import { AvgNiftySwingCard, AvgPortfolioSwingCard } from '../components/portfolio/SwingCards';
+import { HighestNAVCard } from '../components/portfolio/HighestNAVCard';
+import { AvgDaysToNewHighCard } from '../components/portfolio/AvgDaysToNewHighCard';
 import { AnnualizedForecastCard } from '../components/portfolio/AnnualizedForecastCard';
 import { PeriodicReturnsCards } from '../components/portfolio/PeriodicReturnsCards';
 import { ReturnDistribution } from '../components/portfolio/ReturnDistribution';
@@ -136,11 +135,9 @@ export default function NetAssetPortfolioPage() {
 
             {/* 4. Stat Cards Row */}
             <div id="section-stats" className="scroll-mt-20 space-y-6">
-              <div className="stat-grid" data-stat-row>
-                <WinRatioCard metrics={metrics} />
-                <WorkingDaysCard metrics={metrics} />
-                <AvgPortfolioSwingCard metrics={metrics} />
-                <AvgNiftySwingCard metrics={metrics} />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4 md:gap-6" data-stat-row>
+                <HighestNAVCard metrics={metrics} />
+                <AvgDaysToNewHighCard metrics={metrics} />
                 <AnnualizedForecastCard metrics={metrics} isNetAsset={true} />
               </div>
 

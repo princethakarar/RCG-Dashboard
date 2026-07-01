@@ -157,45 +157,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ metrics, isNetAsset = false 
         </CardContent>
       </Card>
 
-      {/* CARD 6: Highest NAV Achieved */}
-      {highestPoint && (
-        <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card>
-          <CardHeader className="kpi-card-header pb-2">
-            <CardDescription className="kpi-card-label font-semibold uppercase tracking-wide text-[#9B8A92] flex items-center justify-between gap-1">
-              <span className="leading-tight">HIGHEST NAV ACHIEVED</span>
-              <TrendingUp className="w-3.5 h-3.5 text-[#16A34A] shrink-0" />
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="kpi-card-body">
-            <div className="kpi-card-value tracking-tight text-[#16A34A]">
-              {highestPoint.roi.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}
-            </div>
-            <p className="text-[10px] sm:text-[11px] text-[#9B8A92] mt-1 font-sans">
-              Achieved {formatDateFull(highestPoint.date)}
-            </p>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* CARD 7: Avg Days to Reach New High */}
-      <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card>
-        <CardHeader className="kpi-card-header pb-2">
-          <CardDescription className="kpi-card-label font-semibold uppercase tracking-wide text-[#9B8A92] flex items-center justify-between gap-1">
-            <span className="leading-tight">AVG DAYS TO NEW HIGH</span>
-            <Clock className="w-3.5 h-3.5 text-[#1A0A10] shrink-0" />
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="kpi-card-body">
-          <div className="kpi-card-value tracking-tight text-[#1A0A10]">
-            {avgDaysToNewHigh !== null && avgDaysToNewHigh !== undefined ? `${avgDaysToNewHigh} days` : 'N/A'}
-          </div>
-          <p className="text-[10px] sm:text-[11px] text-[#9B8A92] mt-1 font-sans">
-            {avgDaysToNewHigh !== null && avgDaysToNewHigh !== undefined 
-              ? 'Average gap between new NAV highs' 
-              : 'Not enough data yet'}
-          </p>
-        </CardContent>
-      </Card>
 
     </div>
   );

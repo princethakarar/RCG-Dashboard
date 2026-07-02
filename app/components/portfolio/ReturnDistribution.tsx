@@ -16,6 +16,7 @@ interface ReturnDistributionProps {
 export const ReturnDistribution: React.FC<ReturnDistributionProps> = ({ metrics }) => {
   const pathname = usePathname();
   const isNetAsset = pathname === '/net-asset';
+  const isClientDashboard = pathname.startsWith('/backoffice/client');
   const { roiDistribution, totalDays } = metrics;
   const breakpoint = useBreakpoint();
   const tickFontSize = getChartTickFontSize(breakpoint);
@@ -51,7 +52,7 @@ export const ReturnDistribution: React.FC<ReturnDistributionProps> = ({ metrics 
               Return Distribution by Day
             </CardTitle>
             <CardDescription className="text-[11px] sm:text-[12px] text-[#9B8A92] mt-0.5">
-              Frequency of daily returns categorized into percentage brackets (optimized for {isNetAsset ? 'Net Asset' : '3x leverage'})
+              Frequency of daily returns categorized into percentage brackets (optimized for {isNetAsset ? 'Net Asset' : (isClientDashboard ? 'Client Portfolio' : '3x leverage')})
             </CardDescription>
           </div>
         </div>
@@ -116,7 +117,7 @@ export const ReturnDistribution: React.FC<ReturnDistributionProps> = ({ metrics 
             </div>
           </div>
 
-          <div className="border border-[#EDE0E6] rounded-xl overflow-hidden bg-white shadow-none w-full overflow-x-auto">
+          <div className="distribution-table-wrapper border border-[#EDE0E6] rounded-xl overflow-hidden bg-white shadow-none w-full overflow-x-auto">
             <div className="bg-[#F8F4F6] border-b border-[#EDE0E6] px-4 py-3">
               <span className="text-[10px] sm:text-[11px] font-bold text-[#1A0A10] uppercase tracking-wider font-sans">
                 Return Classification

@@ -17,6 +17,7 @@ export const TopNav: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isNetAsset = pathname === '/net-asset';
+  const isBackoffice = pathname.startsWith('/backoffice');
   const metrics = isNetAsset ? netAssetMetrics : metrics3x;
   const data = isNetAsset ? netAssetData : data3x;
 
@@ -145,7 +146,7 @@ export const TopNav: React.FC = () => {
         {/* Right Area: Badges, Profile, and Mobile Hamburger Controls */}
         <div className="flex items-center gap-2 md:gap-3 shrink-0 relative">
           {/* Desktop Date badge */}
-          {data.length > 0 && metrics && (
+          {!isBackoffice && data.length > 0 && metrics && (
             <div className="hidden xl:block">
               <Badge variant="outline" className="border-[#8B0A3D] text-[#8B0A3D] font-semibold text-[11px] px-3 py-1 whitespace-nowrap">
                 {getDateRangeStr()}
@@ -154,7 +155,7 @@ export const TopNav: React.FC = () => {
           )}
 
           {/* Mobile/Tablet Date badge */}
-          {data.length > 0 && metrics && (
+          {!isBackoffice && data.length > 0 && metrics && (
             <div className="block xl:hidden">
               <Badge
                 variant="outline"

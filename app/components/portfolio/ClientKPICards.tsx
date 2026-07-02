@@ -36,7 +36,7 @@ export const ClientKPICards: React.FC<ClientKPICardsProps> = ({ metrics }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 xl:gap-6 select-none">
+    <div className="kpi-cards-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 xl:gap-6 select-none">
       
       {/* CARD 1: Running ROI on Net Margin */}
       <Card className="relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow border-[#EDE0E6] bg-white">

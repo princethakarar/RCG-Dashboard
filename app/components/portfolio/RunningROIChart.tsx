@@ -17,6 +17,7 @@ interface RunningROIChartProps {
 export const RunningROIChart: React.FC<RunningROIChartProps> = ({ data }) => {
   const pathname = usePathname();
   const isNetAsset = pathname === '/net-asset';
+  const isClientDashboard = pathname.startsWith('/backoffice/client');
   const breakpoint = useBreakpoint();
   const tickFontSize = getChartTickFontSize(breakpoint);
   const xInterval = getXAxisTickInterval(data.length, breakpoint);
@@ -161,7 +162,7 @@ export const RunningROIChart: React.FC<RunningROIChartProps> = ({ data }) => {
 
                   <Line 
                     yAxisId="left"
-                    name={isNetAsset ? 'Portfolio Net Asset (Running ROI)' : 'Portfolio 3x (Running ROI)'}
+                    name={isNetAsset ? 'Portfolio Net Asset (Running ROI)' : (isClientDashboard ? 'Portfolio (Running ROI)' : 'Portfolio 3x (Running ROI)')}
                     type="monotone" 
                     dataKey="runningROI" 
                     stroke="#8B0A3D" 
@@ -221,7 +222,7 @@ export const RunningROIChart: React.FC<RunningROIChartProps> = ({ data }) => {
               <div className="space-y-3">
                 <div className="flex justify-between items-center gap-2">
                   <span className="text-[11px] font-medium text-[#6B4A58]">
-                    {isNetAsset ? 'Portfolio Net Asset' : 'Portfolio 3x'}
+                    {isNetAsset ? 'Portfolio Net Asset' : (isClientDashboard ? 'Portfolio' : 'Portfolio 3x')}
                   </span>
                   <span className={`summary-panel-value ${portfolioLastVal >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
                     {portfolioLastVal >= 0 ? '+' : ''}{portfolioLastVal.toFixed(2)}%

@@ -2,7 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { maskMobile, maskEmail, formatDateFull } from '../lib/formatters';
+import { TopNav } from '../components/layout/TopNav';
+import { Footer } from '../components/layout/Footer';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import {
@@ -64,25 +67,30 @@ export default function BackofficePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F4F6] pb-24">
-      {/* Header section matching existing theme spacing */}
-      <div className="bg-[#8B0A3D] text-white pt-8 pb-16 px-4 md:px-8">
-        <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold font-sans tracking-tight">Client Management</h1>
-            <p className="text-white/80 text-sm mt-1">Manage client profiles and view individual dashboards</p>
-          </div>
-          <Button 
-            onClick={() => router.push('/backoffice/add')}
-            className="bg-white text-[#8B0A3D] hover:bg-white/90 font-bold"
-          >
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Sticky Top Navigation */}
+      <TopNav />
+
+      {/* Page Header (matches PageHeader styling on main dashboard) */}
+      <div className="w-full bg-white dashboard-container pt-5 md:pt-7 pb-4 md:pb-6 border-b border-rcg-border/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 select-none">
+        <div className="flex flex-col">
+          <h1 className="text-xl sm:text-2xl lg:text-[28px] font-extrabold text-[#1A0A10] tracking-tight leading-tight flex flex-wrap items-baseline gap-x-2">
+            <span>Client <span className="text-[#8B0A3D]">Management</span></span>
+          </h1>
+          <p className="text-xs sm:text-[13px] font-normal text-[#9B8A92] mt-1.5 sm:mt-2 font-sans">
+            Manage client profiles and view individual dashboards
+          </p>
+        </div>
+        <Link href="/backoffice/add" passHref>
+          <Button className="shrink-0">
             <Plus className="w-4 h-4 mr-2" /> Add Client
           </Button>
-        </div>
+        </Link>
       </div>
 
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 -mt-8 relative z-10">
-        <Card className="shadow-lg border-[#EDE0E6]">
+      {/* Main Content Area */}
+      <main className="flex-1 dashboard-container py-4 md:py-6 w-full">
+        <Card className="border-[#EDE0E6] bg-white overflow-hidden">
           <CardHeader className="bg-white border-b border-[#EDE0E6] pb-4">
             <CardTitle className="text-[#1A0A10] flex items-center gap-2 text-lg">
               <Users className="w-5 h-5 text-[#8B0A3D]" /> All Clients
@@ -111,9 +119,11 @@ export default function BackofficePage() {
                 <p className="text-[#6B4A58] mt-1 max-w-sm mb-6">
                   Get started by adding your first client and uploading their trading data.
                 </p>
-                <Button onClick={() => router.push('/backoffice/add')} className="bg-[#8B0A3D] hover:bg-[#700832]">
-                  <Plus className="w-4 h-4 mr-2" /> Add Your First Client
-                </Button>
+                <Link href="/backoffice/add" passHref>
+                  <Button className="bg-[#8B0A3D] hover:bg-[#700832]">
+                    <Plus className="w-4 h-4 mr-2" /> Add Your First Client
+                  </Button>
+                </Link>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -129,7 +139,11 @@ export default function BackofficePage() {
                   </TableHeader>
                   <TableBody>
                     {clients.map((client) => (
-                      <TableRow key={client.id} className="hover:bg-[#F3E8EC]/30">
+                      <TableRow 
+                        key={client.id} 
+                        className="hover:bg-[#F3E8EC]/30 cursor-pointer transition-colors"
+                        onClick={() => router.push(`/backoffice/client/${client.id}`)}
+                      >
                         <TableCell className="font-medium text-[#1A0A10]">{client.name}</TableCell>
                         <TableCell className="text-[#6B4A58] font-mono text-sm">{maskMobile(client.mobile)}</TableCell>
                         <TableCell className="text-[#6B4A58] text-sm">{maskEmail(client.email)}</TableCell>
@@ -137,17 +151,13 @@ export default function BackofficePage() {
                           {formatDateFull(client.created_at.split('T')[0])}
                         </TableCell>
                         <TableCell className="text-right space-x-2">
-                          <Button 
-                            variant="outline" 
-                            className="border-[#8B0A3D]/20 text-[#8B0A3D] hover:bg-[#8B0A3D]/5 text-sm py-1 px-3 h-8"
-                            onClick={() => router.push(`/backoffice/client/${client.id}`)}
-                          >
-                            <Eye className="w-4 h-4 mr-1" /> View
-                          </Button>
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 text-sm py-1 px-2 h-8"
-                            onClick={() => handleDelete(client.id, client.name)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(client.id, client.name);
+                            }}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -160,7 +170,10 @@ export default function BackofficePage() {
             )}
           </CardContent>
         </Card>
-      </div>
+      </main>
+
+      {/* Dark Institutional Footer */}
+      <Footer />
     </div>
   );
 }

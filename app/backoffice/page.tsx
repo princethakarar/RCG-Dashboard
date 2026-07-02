@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table';
-import { Users, Plus, Eye, Trash2, Loader2 } from 'lucide-react';
+import { Users, Plus, Trash2, Loader2 } from 'lucide-react';
 
 interface ClientRow {
   id: string;

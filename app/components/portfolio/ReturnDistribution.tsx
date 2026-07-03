@@ -86,7 +86,7 @@ export const ReturnDistribution: React.FC<ReturnDistributionProps> = ({ metrics 
                     tickLine={false}
                     width={40}
                     allowDecimals={false}
-                    domain={[0, (dataMax) => Math.max(12, dataMax)]}
+                    domain={[0, (dataMax: number) => Math.max(12, dataMax)]}
                   />
 
                   <Tooltip content={<CustomTooltip />} />

@@ -1,5 +1,11 @@
 import { formatDate } from './formatters';
 
+// Fixed weekly return target (percent) — replaces the old 5-year rolling average benchmark.
+export const WEEKLY_TARGET_RETURN = 0.225;
+
+// Size of the trailing window used for the chart + summary cards (last 2 years).
+export const WEEKS_IN_WINDOW = 104; // last 2 years (was 52)
+
 export interface NiftyWeeklyRow {
   date: string; // YYYY-MM-DD, week-ending
   high: number;
@@ -17,12 +23,13 @@ export interface WeeklyReturnPoint {
 }
 
 export interface NiftyWeeklyBenchmarkResult {
-  benchmarkSimpleAvg: number;
-  benchmarkCagr: number;
-  last52: WeeklyReturnPoint[];
-  weeksAchievedLast1Y: number;
-  longestRecoveryStreakLast1Y: number;
+  weeklyTarget: number;
+  windowWeeks: WeeklyReturnPoint[];
+  weeksAchievedInWindow: number;
+  longestRecoveryStreakInWindow: number;
   currentStreak: number;
+  avgAboveTargetInWindow: number | null;
+  avgBelowTargetInWindow: number | null;
 }
 
 // CSV columns: Date (DD-MM-YYYY), High, Low, Close
@@ -46,7 +53,7 @@ export function parseNiftyWeeklyCsv(csvText: string): NiftyWeeklyRow[] {
 export function computeNiftyWeeklyBenchmark(rows: NiftyWeeklyRow[]): NiftyWeeklyBenchmarkResult | null {
   if (!rows || rows.length < 2) return null;
 
-  // 1. Weekly return for every row from the 2nd row onward
+  // Weekly return for every row from the 2nd row onward
   const rawReturns: { date: string; weeklyReturn: number }[] = [];
   for (let i = 1; i < rows.length; i++) {
     const prevClose = rows[i - 1].close;
@@ -54,21 +61,12 @@ export function computeNiftyWeeklyBenchmark(rows: NiftyWeeklyRow[]): NiftyWeekly
     rawReturns.push({ date: rows[i].date, weeklyReturn });
   }
 
-  // 2. 5-year benchmark: simple average across the full history (primary),
-  // plus a CAGR-derived weekly rate (secondary/alternate figure).
-  const benchmarkSimpleAvg =
-    rawReturns.reduce((sum, r) => sum + r.weeklyReturn, 0) / rawReturns.length;
-
-  const totalWeeks = rawReturns.length;
-  const firstClose = rows[0].close;
-  const lastClose = rows[rows.length - 1].close;
-  const benchmarkCagr = (Math.pow(lastClose / firstClose, 1 / totalWeeks) - 1) * 100;
-
-  // 5. Negative-streak-before-achievement, walked over the FULL history so
-  // streaks aren't cut off at the 1-year boundary.
+  // Negative-streak-before-achievement, walked over the FULL history so
+  // streaks aren't cut off at the window boundary. Achievement is measured
+  // against the fixed WEEKLY_TARGET_RETURN, not a rolling average.
   let negativeStreak = 0;
   const enriched: WeeklyReturnPoint[] = rawReturns.map((r) => {
-    const achieved = r.weeklyReturn >= benchmarkSimpleAvg;
+    const achieved = r.weeklyReturn >= WEEKLY_TARGET_RETURN;
     let streakBeforeAchievement: number | null = null;
 
     if (achieved) {
@@ -77,7 +75,7 @@ export function computeNiftyWeeklyBenchmark(rows: NiftyWeeklyRow[]): NiftyWeekly
     } else if (r.weeklyReturn < 0) {
       negativeStreak += 1;
     }
-    // else: 0 <= weeklyReturn < benchmark → flat, streak stays as-is
+    // else: 0 <= weeklyReturn < target → flat, streak stays as-is
 
     return {
       date: r.date,
@@ -89,23 +87,38 @@ export function computeNiftyWeeklyBenchmark(rows: NiftyWeeklyRow[]): NiftyWeekly
     };
   });
 
-  // 3. Last 1 year slice (52 most recent weeks) for the main chart.
-  const last52 = enriched.slice(-52);
+  // Trailing window slice (most recent WEEKS_IN_WINDOW weeks) for the main chart.
+  const windowWeeks = enriched.slice(-WEEKS_IN_WINDOW);
 
-  // Summary stats over the last 52 weeks.
-  const weeksAchievedLast1Y = last52.filter((w) => w.achieved).length;
-  const longestRecoveryStreakLast1Y = last52.reduce(
+  // Summary stats over the window.
+  const weeksAchievedInWindow = windowWeeks.filter((w) => w.achieved).length;
+  const longestRecoveryStreakInWindow = windowWeeks.reduce(
     (max, w) => (w.streakBeforeAchievement !== null ? Math.max(max, w.streakBeforeAchievement) : max),
     0
   );
   const currentStreak = enriched[enriched.length - 1]?.runningNegativeStreak ?? 0;
 
+  // Average return on weeks that beat the target, and average return on
+  // outright negative weeks — both over the window.
+  const aboveTargetWeeks = windowWeeks.filter((w) => w.weeklyReturn > WEEKLY_TARGET_RETURN);
+  const avgAboveTargetInWindow =
+    aboveTargetWeeks.length > 0
+      ? aboveTargetWeeks.reduce((sum, w) => sum + w.weeklyReturn, 0) / aboveTargetWeeks.length
+      : null;
+
+  const belowTargetWeeks = windowWeeks.filter((w) => w.weeklyReturn < 0);
+  const avgBelowTargetInWindow =
+    belowTargetWeeks.length > 0
+      ? belowTargetWeeks.reduce((sum, w) => sum + w.weeklyReturn, 0) / belowTargetWeeks.length
+      : null;
+
   return {
-    benchmarkSimpleAvg,
-    benchmarkCagr,
-    last52,
-    weeksAchievedLast1Y,
-    longestRecoveryStreakLast1Y,
+    weeklyTarget: WEEKLY_TARGET_RETURN,
+    windowWeeks,
+    weeksAchievedInWindow,
+    longestRecoveryStreakInWindow,
     currentStreak,
+    avgAboveTargetInWindow,
+    avgBelowTargetInWindow,
   };
 }

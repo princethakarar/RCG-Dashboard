@@ -148,7 +148,7 @@ export default function BackofficePage() {
                         <TableCell className="text-[#6B4A58] font-mono text-sm">{maskMobile(client.mobile)}</TableCell>
                         <TableCell className="text-[#6B4A58] text-sm">{maskEmail(client.email)}</TableCell>
                         <TableCell className="text-[#6B4A58] text-sm">
-                          {formatDateFull(client.created_at.split('T')[0])}
+                          {formatDateFull(client.created_at ? client.created_at.split('T')[0] : '')}
                         </TableCell>
                         <TableCell className="text-right space-x-2">
                           <Button

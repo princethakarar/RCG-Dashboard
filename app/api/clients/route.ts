@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { getUserId } from '../../lib/getUser';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,7 +20,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ clients });
+    return NextResponse.json({ clients }, {
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+      },
+    });
   } catch (error: unknown) {
     console.error('[clients GET] Error:', error);
     return NextResponse.json({ error: (error as Error).message }, { status: 401 });

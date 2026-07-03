@@ -2,7 +2,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 
-const SECTIONS = [
+export interface SectionNavItem {
+  id: string;
+  label: string;
+}
+
+const DEFAULT_SECTIONS: SectionNavItem[] = [
   { id: 'section-kpi', label: 'KPIs' },
   { id: 'section-performance', label: 'Performance' },
   { id: 'section-daily', label: 'Daily Returns' },
@@ -11,12 +16,16 @@ const SECTIONS = [
   { id: 'section-swing', label: 'Swing' },
 ];
 
-export const StickySectionNav: React.FC = () => {
-  const [activeId, setActiveId] = useState(SECTIONS[0].id);
+interface StickySectionNavProps {
+  sections?: SectionNavItem[];
+}
+
+export const StickySectionNav: React.FC<StickySectionNavProps> = ({ sections = DEFAULT_SECTIONS }) => {
+  const [activeId, setActiveId] = useState(sections[0]?.id);
   const isScrollingRef = useRef(false);
 
   useEffect(() => {
-    const sectionElements = SECTIONS.map(s => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
+    const sectionElements = sections.map(s => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
     const intersectingMap = new Map<string, boolean>();
 
     const observer = new IntersectionObserver(
@@ -28,8 +37,8 @@ export const StickySectionNav: React.FC = () => {
           intersectingMap.set(entry.target.id, entry.isIntersecting);
         });
 
-        // Determine active section: the first intersecting section in SECTIONS order
-        const active = SECTIONS.find((s) => intersectingMap.get(s.id))?.id;
+        // Determine active section: the first intersecting section in sections order
+        const active = sections.find((s) => intersectingMap.get(s.id))?.id;
         if (active) {
           setActiveId(active);
         }
@@ -47,7 +56,7 @@ export const StickySectionNav: React.FC = () => {
       sectionElements.forEach((el) => observer.unobserve(el));
       observer.disconnect();
     };
-  }, []);
+  }, [sections]);
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
@@ -68,7 +77,7 @@ export const StickySectionNav: React.FC = () => {
   return (
     <nav className="floating-nav-wrapper no-print" aria-label="Section navigation">
       <div className="floating-nav">
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <button
             key={section.id}
             type="button"

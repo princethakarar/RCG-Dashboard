@@ -2,17 +2,27 @@
 
 import React from 'react';
 import { useMaxUpsideDownside } from '../../hooks/useMaxUpsideDownside';
+import { useNiftyWeeklyBenchmark } from '../../hooks/useNiftyWeeklyBenchmark';
 import { TopNav } from '../../components/layout/TopNav';
 import { Footer } from '../../components/layout/Footer';
+import { StickySectionNav } from '../../components/layout/StickySectionNav';
 import { MaxUpsideDownsideChart } from '../../components/portfolio/MaxUpsideDownsideChart';
 import { PLvsLOTChart } from '../../components/portfolio/PLvsLOTChart';
+import { WeeklyReturnBenchmarkChart } from '../../components/portfolio/WeeklyReturnBenchmarkChart';
 import { usePositionData } from '../../hooks/usePositionData';
 import { FolderOpen, ArrowRight, ShieldAlert, Loader } from 'lucide-react';
 import Link from 'next/link';
 
+const STATISTICS_SECTIONS = [
+  { id: 'section-max-upside', label: 'Upside/Downside' },
+  { id: 'section-pl-lot', label: 'P&L vs LOT' },
+  { id: 'section-weekly-target', label: 'Weekly Target' },
+];
+
 export default function StatisticsPage() {
   const { data: maxData, loading: maxLoading, error: maxError, refetch: maxRefetch } = useMaxUpsideDownside();
   const { data: positionData, loading: positionLoading, error: positionError, refetch: positionRefetch } = usePositionData();
+  const { data: weeklyBenchmark, loading: weeklyLoading, error: weeklyError } = useNiftyWeeklyBenchmark();
 
   const renderContent = () => {
     if (maxLoading || positionLoading) {
@@ -67,8 +77,16 @@ export default function StatisticsPage() {
 
     return (
       <div className="w-full space-y-6">
-        {maxData.length > 0 && <MaxUpsideDownsideChart data={maxData} />}
-        {positionData.length > 0 && <PLvsLOTChart data={positionData} />}
+        {maxData.length > 0 && (
+          <div id="section-max-upside" className="scroll-mt-20">
+            <MaxUpsideDownsideChart data={maxData} />
+          </div>
+        )}
+        {positionData.length > 0 && (
+          <div id="section-pl-lot" className="scroll-mt-20">
+            <PLvsLOTChart data={positionData} />
+          </div>
+        )}
       </div>
     );
   };
@@ -96,7 +114,33 @@ export default function StatisticsPage() {
         {/* Content Section */}
         {renderContent()}
 
+        {/* Weekly Return vs 5-Year Benchmark */}
+        {weeklyLoading && (
+          <div className="flex flex-col items-center justify-center py-16 select-none">
+            <Loader size={28} className="text-[#8B0A3D] animate-spin" />
+            <span className="text-xs font-semibold text-[#9B8A92] mt-3 font-sans">
+              Loading weekly benchmark data...
+            </span>
+          </div>
+        )}
+        {!weeklyLoading && weeklyError && (
+          <div className="text-xs font-semibold text-red-600 text-center py-10 font-sans select-none">
+            {weeklyError}
+          </div>
+        )}
+        {!weeklyLoading && !weeklyError && weeklyBenchmark && (
+          <div id="section-weekly-target" className="scroll-mt-20 section-weekly-target-pad space-y-3">
+            <h3 className="text-[10px] sm:text-[11px] font-bold text-[#9B8A92] uppercase tracking-wider font-sans">
+              NIFTY WEEKLY TARGET
+            </h3>
+            <WeeklyReturnBenchmarkChart data={weeklyBenchmark} />
+          </div>
+        )}
+
       </main>
+
+      {/* Floating Section Navigation */}
+      <StickySectionNav sections={STATISTICS_SECTIONS} />
 
       {/* Institutional Footer */}
       <Footer />

@@ -640,6 +640,11 @@ body {
   padding-bottom: 80px;
 }
 
+/* Statistics page: last section padding to prevent overlap with floating nav/footer */
+.section-weekly-target-pad {
+  padding-bottom: 80px;
+}
+
 /* Win ratio progress bar full width */
 .win-ratio-progress {
   width: 100%;

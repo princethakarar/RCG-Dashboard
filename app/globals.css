@@ -641,7 +641,7 @@ body {
 }
 
 /* Statistics page: last section padding to prevent overlap with floating nav/footer */
-.section-weekly-target-pad {
+.statistics-last-section-pad {
   padding-bottom: 80px;
 }
 

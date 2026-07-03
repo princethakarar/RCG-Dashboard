@@ -3,13 +3,15 @@
 import React from 'react';
 import { useMaxUpsideDownside } from '../../hooks/useMaxUpsideDownside';
 import { useNiftyWeeklyBenchmark } from '../../hooks/useNiftyWeeklyBenchmark';
+import { useNiftyMonthlyBenchmark } from '../../hooks/useNiftyMonthlyBenchmark';
 import { TopNav } from '../../components/layout/TopNav';
 import { Footer } from '../../components/layout/Footer';
 import { StickySectionNav } from '../../components/layout/StickySectionNav';
 import { MaxUpsideDownsideChart } from '../../components/portfolio/MaxUpsideDownsideChart';
 import { PLvsLOTChart } from '../../components/portfolio/PLvsLOTChart';
-import { WeeklyReturnBenchmarkChart } from '../../components/portfolio/WeeklyReturnBenchmarkChart';
+import { TargetConsistencyChart } from '../../components/portfolio/TargetConsistencyChart';
 import { usePositionData } from '../../hooks/usePositionData';
+import { formatDateFull, formatMonthYear } from '../../lib/formatters';
 import { FolderOpen, ArrowRight, ShieldAlert, Loader } from 'lucide-react';
 import Link from 'next/link';
 
@@ -17,12 +19,14 @@ const STATISTICS_SECTIONS = [
   { id: 'section-max-upside', label: 'Upside/Downside' },
   { id: 'section-pl-lot', label: 'P&L vs LOT' },
   { id: 'section-weekly-target', label: 'Weekly Target' },
+  { id: 'section-monthly-target', label: 'Monthly Target' },
 ];
 
 export default function StatisticsPage() {
   const { data: maxData, loading: maxLoading, error: maxError, refetch: maxRefetch } = useMaxUpsideDownside();
   const { data: positionData, loading: positionLoading, error: positionError, refetch: positionRefetch } = usePositionData();
   const { data: weeklyBenchmark, loading: weeklyLoading, error: weeklyError } = useNiftyWeeklyBenchmark();
+  const { data: monthlyBenchmark, loading: monthlyLoading, error: monthlyError } = useNiftyMonthlyBenchmark();
 
   const renderContent = () => {
     if (maxLoading || positionLoading) {
@@ -114,7 +118,7 @@ export default function StatisticsPage() {
         {/* Content Section */}
         {renderContent()}
 
-        {/* Weekly Return vs 5-Year Benchmark */}
+        {/* Nifty Weekly Target */}
         {weeklyLoading && (
           <div className="flex flex-col items-center justify-center py-16 select-none">
             <Loader size={28} className="text-[#8B0A3D] animate-spin" />
@@ -129,11 +133,54 @@ export default function StatisticsPage() {
           </div>
         )}
         {!weeklyLoading && !weeklyError && weeklyBenchmark && (
-          <div id="section-weekly-target" className="scroll-mt-20 section-weekly-target-pad space-y-3">
+          <div id="section-weekly-target" className="scroll-mt-20 space-y-3">
             <h3 className="text-[10px] sm:text-[11px] font-bold text-[#9B8A92] uppercase tracking-wider font-sans">
               NIFTY WEEKLY TARGET
             </h3>
-            <WeeklyReturnBenchmarkChart data={weeklyBenchmark} />
+            <TargetConsistencyChart
+              data={weeklyBenchmark}
+              periodNoun="week"
+              periodNounPlural="weeks"
+              windowLabel="Last 2Y"
+              targetDecimals={3}
+              achievedPctDecimals={0}
+              sectionTitle="Weekly Target Consistency"
+              sectionSubtitle="Last 104 weeks — tracking performance against a fixed 0.225% weekly return target"
+              formatTooltipDate={formatDateFull}
+            />
+          </div>
+        )}
+
+        {/* Nifty Monthly Target */}
+        {monthlyLoading && (
+          <div className="flex flex-col items-center justify-center py-16 select-none">
+            <Loader size={28} className="text-[#8B0A3D] animate-spin" />
+            <span className="text-xs font-semibold text-[#9B8A92] mt-3 font-sans">
+              Loading monthly benchmark data...
+            </span>
+          </div>
+        )}
+        {!monthlyLoading && monthlyError && (
+          <div className="text-xs font-semibold text-red-600 text-center py-10 font-sans select-none">
+            {monthlyError}
+          </div>
+        )}
+        {!monthlyLoading && !monthlyError && monthlyBenchmark && (
+          <div id="section-monthly-target" className="scroll-mt-20 statistics-last-section-pad space-y-3">
+            <h3 className="text-[10px] sm:text-[11px] font-bold text-[#9B8A92] uppercase tracking-wider font-sans">
+              NIFTY MONTHLY TARGET
+            </h3>
+            <TargetConsistencyChart
+              data={monthlyBenchmark}
+              periodNoun="month"
+              periodNounPlural="months"
+              windowLabel="Last 2Y"
+              targetDecimals={2}
+              achievedPctDecimals={1}
+              sectionTitle="Monthly Target Consistency"
+              sectionSubtitle="Last 24 months — tracking performance against a fixed 1.00% monthly return target"
+              formatTooltipDate={formatMonthYear}
+            />
           </div>
         )}
 

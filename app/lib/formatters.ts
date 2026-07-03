@@ -39,6 +39,17 @@ export const formatDateFull = (dateStr: string): string => {
   return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
+// Format month key 'YYYY-MM' to 'Mon YYYY' (e.g. '2024-07' -> 'Jul 2024')
+export const formatMonthYear = (monthKey: string): string => {
+  if (!monthKey) return '';
+  const parts = monthKey.split('-');
+  if (parts.length !== 2) return monthKey;
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const date = new Date(year, month, 1);
+  return date.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+};
+
 // Color for graph lines/bars
 export const pnlColor = (v: number) => v >= 0 ? '#16A34A' : '#DC2626';
 

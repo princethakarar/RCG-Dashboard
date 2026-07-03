@@ -25,37 +25,43 @@ export const StickySectionNav: React.FC<StickySectionNavProps> = ({ sections = D
   const isScrollingRef = useRef(false);
 
   useEffect(() => {
-    const sectionElements = sections.map(s => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
-    const intersectingMap = new Map<string, boolean>();
+    const handleScroll = () => {
+      if (isScrollingRef.current) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // If a user click-initiated smooth scroll is happening, ignore intermediate intersection events
-        if (isScrollingRef.current) return;
+      const scrollPosition = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
 
-        entries.forEach((entry) => {
-          intersectingMap.set(entry.target.id, entry.isIntersecting);
-        });
-
-        // Determine active section: the first intersecting section in sections order
-        const active = sections.find((s) => intersectingMap.get(s.id))?.id;
-        if (active) {
-          setActiveId(active);
-        }
-      },
-      {
-        root: null, // viewport
-        rootMargin: '-20% 0px -50% 0px', // check when elements enter the middle of the viewport
-        threshold: 0,
+      // If at the absolute bottom of the page, activate the last section
+      if (Math.ceil(scrollPosition + windowHeight) >= documentHeight - 50) {
+        setActiveId(sections[sections.length - 1]?.id);
+        return;
       }
-    );
 
-    sectionElements.forEach((el) => observer.observe(el));
-
-    return () => {
-      sectionElements.forEach((el) => observer.unobserve(el));
-      observer.disconnect();
+      // Find the section that is currently passed the middle of the viewport
+      let currentActive = sections[0]?.id;
+      for (const section of sections) {
+        const el = document.getElementById(section.id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          // If the element's top is above the middle of the viewport
+          if (rect.top <= windowHeight / 2) {
+            currentActive = section.id;
+          }
+        }
+      }
+      
+      if (currentActive) {
+        setActiveId(currentActive);
+      }
     };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // Trigger once on mount to set initial state
+    setTimeout(handleScroll, 100);
+
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [sections]);
 
   const scrollTo = (id: string) => {

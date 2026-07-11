@@ -15,9 +15,10 @@ interface StrategyUploadZoneProps {
   onUploadSuccess: () => void;
   files: StrategyFileDetails[];
   strategyName: string;
+  displayName?: string;
 }
 
-export const StrategyUploadZone: React.FC<StrategyUploadZoneProps> = ({ onUploadSuccess, files, strategyName }) => {
+export const StrategyUploadZone: React.FC<StrategyUploadZoneProps> = ({ onUploadSuccess, files, strategyName, displayName }) => {
   const router = useRouter();
   const [dragActive, setDragActive] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
@@ -102,7 +103,7 @@ export const StrategyUploadZone: React.FC<StrategyUploadZoneProps> = ({ onUpload
         throw new Error(data.error || 'Upload failed');
       }
 
-      setSuccessMsg(`Successfully uploaded ${strategyName} Data`);
+      setSuccessMsg(`Successfully uploaded ${displayName || strategyName} Data`);
       onUploadSuccess();
       router.refresh();
       

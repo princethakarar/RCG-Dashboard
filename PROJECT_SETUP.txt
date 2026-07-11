@@ -1,0 +1,398 @@
+================================================================================
+  RCG DASHBOARD — COMPLETE PROJECT SETUP GUIDE
+  Rising Capital Group | Financial Data Management & Visualization Hub
+================================================================================
+
+Last Updated : 2026-07-10
+Project Name : rising-capital-dashboard
+Framework    : Next.js 14 (App Router)
+Language     : TypeScript 5
+Styling      : Tailwind CSS 3.4
+
+
+================================================================================
+  TABLE OF CONTENTS
+================================================================================
+
+  1. Tech Stack & Dependencies
+  2. External Services Required
+  3. Environment Variables
+  4. Port Configuration (Current + How to Change)
+  5. Installation & Local Setup
+  6. Running the Application
+  7. Database & Migration
+  8. Project Folder Structure
+  9. Troubleshooting
+
+
+================================================================================
+  1. TECH STACK & DEPENDENCIES
+================================================================================
+
+  RUNTIME:
+  --------
+  Node.js       >= 18.x (Required)
+  npm           >= 9.x  (Comes with Node.js 18)
+
+  CORE FRAMEWORK:
+  ---------------
+  Next.js       14.2.35   — Full-stack React framework (App Router)
+  React         ^18       — UI library
+  React DOM     ^18       — DOM bindings for React
+  TypeScript    ^5        — Type safety
+
+  STYLING:
+  --------
+  Tailwind CSS  ^3.4.1    — Utility-first CSS
+  PostCSS       ^8        — CSS processing
+
+  DATA & CHARTS:
+  --------------
+  Recharts      ^2.12.7   — Financial charts & visualizations
+  xlsx          ^0.18.5   — Excel file parsing (SheetJS)
+  html2pdf.js   ^0.14.0   — PDF export from dashboard views
+  lucide-react  ^1.17.0   — Icon library
+
+  DATABASE & SERVICES:
+  --------------------
+  pg                  ^8.22.0    — PostgreSQL Node.js client
+  @supabase/supabase-js ^2.108.2 — Supabase client for DB access
+  @upstash/redis      ^1.38.0    — Upstash Redis REST client (caching)
+  @vercel/blob        ^2.4.0     — Vercel Blob file storage
+
+  AUTH:
+  -----
+  bcryptjs      ^3.0.3    — Password hashing
+  jose          ^6.2.3    — JWT creation & verification
+
+
+================================================================================
+  2. EXTERNAL SERVICES REQUIRED
+================================================================================
+
+  The dashboard depends on three external cloud services. You must create
+  accounts and provision these services before the app will function.
+
+  A. SUPABASE (PostgreSQL Database)
+  -----------------------------------
+  Purpose   : Stores all financial records, user data, and time-series metrics
+  Provider  : https://supabase.com (Free tier available)
+  You need  : A Supabase project with the schema applied (see schema.sql)
+  Credentials needed:
+    - Project URL         (NEXT_PUBLIC_SUPABASE_URL)
+    - Anon/Public Key     (NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    - Service Role Key    (SUPABASE_SERVICE_ROLE_KEY)
+    - PostgreSQL conn str (DATABASE_URL) — found under Project Settings > Database
+
+  B. UPSTASH REDIS (Caching & Rate-Limiting)
+  -------------------------------------------
+  Purpose   : High-speed caching of frequent queries & session rate-limiting
+  Provider  : https://upstash.com (Free tier available)
+  You need  : An Upstash Redis database (REST API mode)
+  Credentials needed:
+    - REST URL   (UPSTASH_REDIS_REST_URL)
+    - REST Token (UPSTASH_REDIS_REST_TOKEN)
+
+  C. VERCEL BLOB (File Storage)
+  ------------------------------
+  Purpose   : Stores uploaded Excel files and generated report artifacts
+  Provider  : https://vercel.com (requires Vercel account)
+  You need  : A Vercel Blob store linked to your project
+  Credentials needed:
+    - Store ID        (BLOB_STORE_ID)
+    - Read/Write Token (BLOB_READ_WRITE_TOKEN)
+
+
+================================================================================
+  3. ENVIRONMENT VARIABLES
+================================================================================
+
+  All environment variables must be placed in a file named ".env.local"
+  in the root of the project directory (same level as package.json).
+
+  File location: RCG-Dashboard/.env.local
+
+  NOTE: The .env.local file is git-ignored and must NEVER be committed
+  to source control as it contains secret keys.
+
+  ┌─────────────────────────────────┬──────────────────────────────────────────────────┐
+  │ Variable                        │ Description                                      │
+  ├─────────────────────────────────┼──────────────────────────────────────────────────┤
+  │ DATABASE_URL                    │ Full PostgreSQL connection string                 │
+  │                                 │ e.g. postgresql://user:pass@host:5432/dbname      │
+  ├─────────────────────────────────┼──────────────────────────────────────────────────┤
+  │ NEXT_PUBLIC_SUPABASE_URL        │ Your Supabase project URL                        │
+  │                                 │ e.g. https://xyz.supabase.co                     │
+  ├─────────────────────────────────┼──────────────────────────────────────────────────┤
+  │ NEXT_PUBLIC_SUPABASE_ANON_KEY   │ Supabase public anonymous key                    │
+  │                                 │ e.g. eyJh...                                     │
+  ├─────────────────────────────────┼──────────────────────────────────────────────────┤
+  │ SUPABASE_SERVICE_ROLE_KEY       │ Supabase service role key (server-side only)      │
+  │                                 │ e.g. eyJh...                                     │
+  ├─────────────────────────────────┼──────────────────────────────────────────────────┤
+  │ UPSTASH_REDIS_REST_URL          │ Upstash Redis REST endpoint URL                  │
+  │                                 │ e.g. https://eminent-collie-xxxxx.upstash.io     │
+  ├─────────────────────────────────┼──────────────────────────────────────────────────┤
+  │ UPSTASH_REDIS_REST_TOKEN        │ Upstash Redis auth token                         │
+  │                                 │ e.g. AYZ...                                      │
+  ├─────────────────────────────────┼──────────────────────────────────────────────────┤
+  │ BLOB_STORE_ID                   │ Vercel Blob store ID                             │
+  │                                 │ e.g. store_eJD9IXuS7sA7x5jy                     │
+  ├─────────────────────────────────┼──────────────────────────────────────────────────┤
+  │ BLOB_READ_WRITE_TOKEN           │ Vercel Blob read/write access token              │
+  │                                 │ e.g. vercel_blob_rw_...                          │
+  ├─────────────────────────────────┼──────────────────────────────────────────────────┤
+  │ JWT_SECRET                      │ Secret key for signing/verifying JWTs            │
+  │                                 │ Use a strong random string (64+ chars)           │
+  └─────────────────────────────────┴──────────────────────────────────────────────────┘
+
+  Sample .env.local template:
+  ---------------------------
+    DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
+    NEXT_PUBLIC_SUPABASE_URL="https://[PROJECT-REF].supabase.co"
+    NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJh..."
+    SUPABASE_SERVICE_ROLE_KEY="eyJh..."
+    UPSTASH_REDIS_REST_URL="https://[your-db].upstash.io"
+    UPSTASH_REDIS_REST_TOKEN="[your-token]"
+    BLOB_STORE_ID="store_[your-store-id]"
+    BLOB_READ_WRITE_TOKEN="vercel_blob_rw_[your-token]"
+    JWT_SECRET="[your-64-char-random-string]"
+
+
+================================================================================
+  4. PORT CONFIGURATION
+================================================================================
+
+  CURRENT PORT: 3000
+  ------------------
+  The application currently runs on the default Next.js port:
+    http://localhost:3000
+
+  This is the default because the "dev" script in package.json does not
+  specify a custom port:
+    "dev": "next dev"        <-- No -p flag, so defaults to port 3000
+    "start": "next start"    <-- Also defaults to port 3000 in production
+
+
+  HOW TO CHANGE THE PORT
+  -----------------------
+  There are THREE ways to change the port:
+
+  METHOD 1 — Modify package.json (RECOMMENDED — Permanent Change)
+  ---------------------------------------------------------------
+  File to edit: RCG-Dashboard/package.json
+  Location    : Lines 5–10 (the "scripts" section)
+
+  Change the "dev" and/or "start" scripts to add the -p flag:
+
+    BEFORE:
+      "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint"
+      }
+
+    AFTER (example — change to port 4000):
+      "scripts": {
+        "dev": "next dev -p 4000",
+        "build": "next build",
+        "start": "next start -p 4000",
+        "lint": "next lint"
+      }
+
+  After saving, run "npm run dev" and visit: http://localhost:4000
+
+
+  METHOD 2 — Set a PORT Environment Variable (Flexible)
+  ------------------------------------------------------
+  Add the PORT variable to your .env.local file:
+
+    PORT=4000
+
+  Or set it inline when running the command:
+
+    Windows PowerShell:  $env:PORT=4000; npm run dev
+    Windows CMD:         set PORT=4000 && npm run dev
+    Linux / macOS:       PORT=4000 npm run dev
+
+  NOTE: Next.js reads the PORT env variable automatically.
+
+
+  METHOD 3 — One-time Override (Without Changing Any Files)
+  ---------------------------------------------------------
+  Pass the port flag directly when starting:
+
+    npm run dev -- -p 4000
+
+  The "--" passes the flag through npm to the underlying next command.
+  This does NOT permanently change the port.
+
+
+  PORT SUMMARY TABLE:
+  -------------------
+  ┌────────────────────┬───────────────────────────────────────────┐
+  │ Environment        │ Current URL                               │
+  ├────────────────────┼───────────────────────────────────────────┤
+  │ Development        │ http://localhost:3000                     │
+  │ Production (local) │ http://localhost:3000                     │
+  │ Vercel (deployed)  │ Assigned automatically by Vercel (HTTPS)  │
+  └────────────────────┴───────────────────────────────────────────┘
+
+
+================================================================================
+  5. INSTALLATION & LOCAL SETUP
+================================================================================
+
+  Step 1 — Prerequisites
+  ----------------------
+  Install Node.js 18+ from: https://nodejs.org
+  Verify installation:
+    node --version    (should show v18.x.x or higher)
+    npm --version     (should show 9.x.x or higher)
+
+  Step 2 — Clone the Repository
+  ------------------------------
+    git clone https://github.com/your-org/RCG-Dashboard.git
+    cd RCG-Dashboard
+
+  Step 3 — Install Dependencies
+  ------------------------------
+    npm install
+
+  Step 4 — Set Up Environment Variables
+  ---------------------------------------
+  Create the .env.local file in the project root and fill in all
+  the credentials listed in Section 3 of this document.
+
+  Step 5 — Apply Database Schema
+  --------------------------------
+  The full database schema is defined in: RCG-Dashboard/schema.sql
+  Apply it to your Supabase/PostgreSQL database:
+
+    Option A — Supabase Dashboard:
+      Go to supabase.com > Your Project > SQL Editor
+      Paste contents of schema.sql and run it.
+
+    Option B — psql command line:
+      psql [YOUR_DATABASE_URL] -f schema.sql
+
+
+================================================================================
+  6. RUNNING THE APPLICATION
+================================================================================
+
+  Development Mode (with hot reload):
+  ------------------------------------
+    npm run dev
+    → App runs at: http://localhost:3000
+
+  Production Mode (locally):
+  ---------------------------
+    npm run build     (compiles and optimizes the app)
+    npm run start     (starts the production server)
+    → App runs at: http://localhost:3000
+
+  Linting:
+  --------
+    npm run lint
+
+
+================================================================================
+  7. DATABASE & MIGRATION
+================================================================================
+
+  Schema File  : RCG-Dashboard/schema.sql
+  Migration Script : RCG-Dashboard/migrate.js
+
+  Run migration (applies schema programmatically):
+    node migrate.js
+
+  Other utility scripts (for development/debugging only):
+    node print_rows.js          — Prints rows from the database
+    node clear_cache.js         — Clears Redis cache
+    node scratch_check_db.js    — Checks DB connectivity
+    node scratch_clear.js       — Clears database records (use with caution!)
+
+
+================================================================================
+  8. PROJECT FOLDER STRUCTURE
+================================================================================
+
+  RCG-Dashboard/
+  ├── app/
+  │   ├── admin/                  # Admin portal & user management
+  │   ├── api/                    # Next.js API Routes (Upload, Data, Auth)
+  │   │   └── upload/             # Excel upload & parsing endpoints
+  │   ├── components/             # Reusable UI components (Charts, Tables, Layout)
+  │   │   ├── layout/             # TopNav, Sidebar, etc.
+  │   │   └── portfolio/          # KPI Cards, Portfolio charts
+  │   ├── intern-portfolio/       # Intern portfolio tracking views
+  │   ├── lib/                    # Core utilities (Redis client, DB client, parsers)
+  │   ├── login/                  # Authentication flow & logic
+  │   ├── net-asset/              # Net asset tracking visualizations
+  │   ├── strategies/             # Investment strategies performance page
+  │   ├── upload/                 # Excel drag-and-drop ingestion interface
+  │   ├── layout.tsx              # Root layout & providers
+  │   └── page.tsx                # Dashboard landing page
+  ├── public/                     # Static assets, logos, icons
+  ├── scripts/                    # Helper/utility scripts
+  ├── scratch/                    # Dev scratch scripts (not for production)
+  ├── data/                       # Local data files (if any)
+  ├── screenshots/                # Project screenshots
+  ├── schema.sql                  # Full PostgreSQL database schema
+  ├── migrate.js                  # Database migration runner
+  ├── middleware.ts               # Next.js middleware (auth, route protection)
+  ├── next.config.mjs             # Next.js configuration
+  ├── tailwind.config.ts          # Tailwind CSS theme and design tokens
+  ├── tsconfig.json               # TypeScript configuration
+  ├── postcss.config.mjs          # PostCSS configuration
+  ├── package.json                # Project dependencies & npm scripts
+  ├── .env.local                  # Local environment variables (GITIGNORED)
+  ├── .gitignore                  # Git ignore rules
+  └── PROJECT_SETUP.txt           # This file
+
+
+================================================================================
+  9. TROUBLESHOOTING
+================================================================================
+
+  Problem  : App crashes on startup with "Missing environment variable" error
+  Solution : Ensure all variables in Section 3 are present in .env.local
+             and that the file is named exactly ".env.local" (not ".env")
+
+  Problem  : Port 3000 is already in use
+  Solution : Change the port using one of the methods in Section 4.
+             Or kill the process using port 3000:
+               Windows: netstat -ano | findstr :3000
+                        taskkill /PID [PID] /F
+               Linux/macOS: lsof -i :3000 && kill -9 [PID]
+
+  Problem  : Database connection errors (ECONNREFUSED or auth failure)
+  Solution : Verify the DATABASE_URL and Supabase credentials are correct.
+             Ensure the schema.sql has been applied to the database.
+
+  Problem  : Redis errors (Upstash connection refused)
+  Solution : Verify UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.
+             Ensure the Upstash database is active and not paused.
+
+  Problem  : Blob upload errors
+  Solution : Verify BLOB_READ_WRITE_TOKEN and BLOB_STORE_ID.
+             The Vercel Blob store must be linked to your Vercel project.
+
+  Problem  : Windows file-lock / 500 errors in development
+  Solution : Already handled. next.config.mjs forces in-memory webpack
+             caching on Windows to prevent this issue.
+             File: RCG-Dashboard/next.config.mjs (lines 3-11)
+
+  Problem  : TypeScript or build errors after pulling new changes
+  Solution : Delete .next folder and node_modules, then reinstall:
+               rmdir /s /q .next
+               rmdir /s /q node_modules
+               npm install
+               npm run build
+
+
+================================================================================
+  END OF SETUP GUIDE
+================================================================================

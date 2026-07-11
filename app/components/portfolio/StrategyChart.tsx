@@ -9,9 +9,10 @@ import { useBreakpoint, getXAxisTickInterval, getChartTickFontSize } from '../..
 interface StrategyChartProps {
   data: Record<string, unknown>[];
   strategyName: string;
+  displayName?: string;
 }
 
-export const StrategyChart: React.FC<StrategyChartProps> = ({ data, strategyName }) => {
+export const StrategyChart: React.FC<StrategyChartProps> = ({ data, strategyName, displayName }) => {
   const breakpoint = useBreakpoint();
   const tickFontSize = getChartTickFontSize(breakpoint);
   const xInterval = getXAxisTickInterval(data.length, breakpoint);
@@ -100,7 +101,7 @@ export const StrategyChart: React.FC<StrategyChartProps> = ({ data, strategyName
     <Card className="border border-[#EDE0E6] shadow-none rounded-2xl overflow-hidden select-none">
       <CardHeader className="card-responsive-header">
         <CardTitle className="text-sm sm:text-[15px] font-semibold text-[#1A0A10] tracking-tight">
-          Net Performance — {strategyName}
+          Net Performance — {displayName || strategyName}
         </CardTitle>
         <CardDescription className="text-[11px] sm:text-[12px] text-[#9B8A92] mt-0.5">
           Net P&amp;L (₹) over time. Green dots indicate a profitable day, red indicate a loss.

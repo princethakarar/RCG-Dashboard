@@ -13,8 +13,13 @@ import { useStrategyData } from '../hooks/useStrategyData';
 import { useMaxUpsideDownside } from '../hooks/useMaxUpsideDownside';
 import { usePositionData } from '../hooks/usePositionData';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
+import { useCurrentUserEmail } from '../hooks/useCurrentUserEmail';
+import { getStrategyDisplayName } from '../lib/strategyDisplayConfig';
 
 export default function UploadPage() {
+  const userEmail = useCurrentUserEmail();
+  const redCandleDisplayName = getStrategyDisplayName('3 Red Candle', userEmail);
+  const soldierDisplayName = getStrategyDisplayName('Soldier Pattern', userEmail);
   const { files, navSeries, refetch } = usePortfolio();
   const { dailyData: strategyData, refetch: refetchStrategy } = useStrategyData('3 Red Candle');
   const { dailyData: soldierData, refetch: refetchSoldier } = useStrategyData('Soldier Pattern');
@@ -53,23 +58,23 @@ export default function UploadPage() {
     if (!strategyData || strategyData.length === 0) return [];
     const sorted = [...strategyData].sort((a, b) => String(a.date).localeCompare(String(b.date)));
     return [{
-      name: '3_Red_Candle_DayWise_PnL.xlsx',
+      name: `${redCandleDisplayName.replace(/\s+/g, '_')}_DayWise_PnL.xlsx`,
       startDate: sorted[0].date as string,
       endDate: sorted[sorted.length - 1].date as string,
       rowCount: sorted.length,
     }];
-  }, [strategyData]);
+  }, [strategyData, redCandleDisplayName]);
 
   const soldierFiles = React.useMemo(() => {
     if (!soldierData || soldierData.length === 0) return [];
     const sorted = [...soldierData].sort((a, b) => String(a.date).localeCompare(String(b.date)));
     return [{
-      name: 'Soldier_Pattern_DayWise_PnL.xlsx',
+      name: `${soldierDisplayName.replace(/\s+/g, '_')}_DayWise_PnL.xlsx`,
       startDate: sorted[0].date as string,
       endDate: sorted[sorted.length - 1].date as string,
       rowCount: sorted.length,
     }];
-  }, [soldierData]);
+  }, [soldierData, soldierDisplayName]);
 
   const maxUpsideDownsideFiles = React.useMemo(() => {
     if (!maxUpsideDownsideData || maxUpsideDownsideData.length === 0) return [];
@@ -158,17 +163,18 @@ export default function UploadPage() {
           <Card className="border border-[#EDE0E6] shadow-none rounded-2xl bg-white">
             <CardHeader className="p-5 pb-2">
               <CardTitle className="text-sm font-bold text-[#1A0A10] uppercase tracking-wide">
-                3 Red Candle Strategy
+                {redCandleDisplayName} Strategy
               </CardTitle>
               <CardDescription className="text-xs text-[#9B8A92] font-semibold leading-relaxed">
                 Ingest daily P&amp;L strategy data from standard Algorest/Day-Wise P&amp;L exports.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-5 pt-0">
-              <StrategyUploadZone 
+              <StrategyUploadZone
                 strategyName="3 Red Candle"
+                displayName={redCandleDisplayName}
                 files={strategyFiles}
-                onUploadSuccess={handleUploadSuccess} 
+                onUploadSuccess={handleUploadSuccess}
               />
             </CardContent>
           </Card>
@@ -176,17 +182,18 @@ export default function UploadPage() {
           <Card className="border border-[#EDE0E6] shadow-none rounded-2xl bg-white">
             <CardHeader className="p-5 pb-2">
               <CardTitle className="text-sm font-bold text-[#1A0A10] uppercase tracking-wide">
-                Soldier Pattern Strategy
+                {soldierDisplayName} Strategy
               </CardTitle>
               <CardDescription className="text-xs text-[#9B8A92] font-semibold leading-relaxed">
-                Ingest daily P&amp;L strategy data for Soldier Pattern.
+                Ingest daily P&amp;L strategy data for {soldierDisplayName}.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-5 pt-0">
-              <StrategyUploadZone 
+              <StrategyUploadZone
                 strategyName="Soldier Pattern"
+                displayName={soldierDisplayName}
                 files={soldierFiles}
-                onUploadSuccess={handleUploadSuccess} 
+                onUploadSuccess={handleUploadSuccess}
               />
             </CardContent>
           </Card>

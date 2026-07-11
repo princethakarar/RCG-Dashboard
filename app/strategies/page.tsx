@@ -10,19 +10,22 @@ import { StrategyChart } from '../components/portfolio/StrategyChart';
 import { StrategyStatsGrid } from '../components/portfolio/StrategyStatsGrid';
 import { FolderOpen, ArrowRight, ShieldAlert, Loader } from 'lucide-react';
 import Link from 'next/link';
+import { useCurrentUserEmail } from '../hooks/useCurrentUserEmail';
+import { getStrategyDisplayName } from '../lib/strategyDisplayConfig';
 
 const STRATEGIES = ['3 Red Candle', 'Soldier Pattern'];
 
-function StrategySection({ strategyName }: { strategyName: string }) {
+function StrategySection({ strategyName, userEmail }: { strategyName: string; userEmail: string | null }) {
   const { dailyData: data, summaryStats: metrics, loading, error, refetch } = useStrategyData(strategyName);
   const sectionId = `strategy-${strategyName.replace(/\s+/g, '-')}`;
+  const displayName = getStrategyDisplayName(strategyName, userEmail);
 
   if (loading) {
     return (
       <div id={sectionId} className="flex-1 flex flex-col items-center justify-center py-40 select-none border-b border-[#EDE0E6] last:border-0 scroll-mt-20">
         <Loader size={36} className="text-[#8B0A3D] animate-spin" />
         <span className="text-xs font-semibold text-[#9B8A92] mt-3 font-sans">
-          Loading {strategyName} data...
+          Loading {displayName} data...
         </span>
       </div>
     );
@@ -32,7 +35,7 @@ function StrategySection({ strategyName }: { strategyName: string }) {
     return (
       <div id={sectionId} className="flex-1 flex flex-col items-center justify-center py-20 px-8 text-center max-w-md mx-auto select-none border-b border-[#EDE0E6] last:border-0 scroll-mt-20">
         <ShieldAlert size={36} className="text-red-600 mb-3" />
-        <h3 className="text-base font-extrabold text-[#1A0A10] tracking-tight">Error Loading {strategyName} Data</h3>
+        <h3 className="text-base font-extrabold text-[#1A0A10] tracking-tight">Error Loading {displayName} Data</h3>
         <p className="text-xs text-[#9B8A92] mt-1.5 leading-relaxed font-sans">
           {error}
         </p>
@@ -51,7 +54,7 @@ function StrategySection({ strategyName }: { strategyName: string }) {
       <div id={sectionId} className="flex-1 flex flex-col items-center justify-center py-20 px-8 text-center max-w-lg mx-auto select-none animate-fade-in border-b border-[#EDE0E6] last:border-0 scroll-mt-20">
         <FolderOpen size={48} className="text-[#8B0A3D] mb-4" />
         <h3 className="text-base font-extrabold text-[#1A0A10] tracking-tight">
-          No Data Found for {strategyName}
+          No Data Found for {displayName}
         </h3>
         <p className="text-xs text-[#9B8A92] mt-2 max-w-xs mx-auto leading-relaxed font-sans">
           Upload the Day-Wise P&amp;L export from AlgoTest in the Data Ingestion portal.
@@ -79,7 +82,7 @@ function StrategySection({ strategyName }: { strategyName: string }) {
           </div>
         </div>
         <div className="text-[7pt] text-[#9B8A92] text-right">
-          <div>Strategy: {strategyName} · {metrics.period as string}</div>
+          <div>Strategy: {displayName} · {metrics.period as string}</div>
           <div>Lot Size: {metrics.lot_size as string} · {metrics.total_trades as number} Trades</div>
           <div>Generated: {new Date().toLocaleString('en-IN')}</div>
         </div>
@@ -89,7 +92,7 @@ function StrategySection({ strategyName }: { strategyName: string }) {
       <div className="w-full bg-white dashboard-container pt-5 md:pt-7 pb-2 border-b border-rcg-border/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 select-none">
         <div className="flex flex-col">
           <h1 className="text-xl sm:text-2xl lg:text-[28px] font-extrabold text-[#1A0A10] tracking-tight leading-tight flex flex-wrap items-baseline gap-x-2">
-            <span>Algorithmic Strategy <span className="text-[#8B0A3D]">{strategyName}</span></span>
+            <span>Algorithmic Strategy <span className="text-[#8B0A3D]">{displayName}</span></span>
           </h1>
           <p className="text-xs sm:text-[13px] font-normal text-[#9B8A92] mt-1.5 sm:mt-2 font-sans">
             {metrics.period as string} · Lot Size: {metrics.lot_size as string} · {metrics.total_trades as number} Total Trades
@@ -120,7 +123,7 @@ function StrategySection({ strategyName }: { strategyName: string }) {
 
         {/* 2. Performance Chart */}
         <div data-chart-card data-chart-full>
-          <StrategyChart data={data} strategyName={strategyName} />
+          <StrategyChart data={data} strategyName={strategyName} displayName={displayName} />
         </div>
 
         {/* Print-only Report Footer */}
@@ -141,10 +144,12 @@ function StrategySection({ strategyName }: { strategyName: string }) {
 }
 
 export default function StrategiesPage() {
+  const userEmail = useCurrentUserEmail();
+
   const navSections = React.useMemo(() => STRATEGIES.map(s => ({
     id: `strategy-${s.replace(/\s+/g, '-')}`,
-    label: s
-  })), []);
+    label: getStrategyDisplayName(s, userEmail)
+  })), [userEmail]);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -153,9 +158,9 @@ export default function StrategiesPage() {
 
       <div className="flex-1 flex flex-col dashboard-with-sticky-nav pt-4">
         {STRATEGIES.map(strategyName => (
-          <StrategySection key={strategyName} strategyName={strategyName} />
+          <StrategySection key={strategyName} strategyName={strategyName} userEmail={userEmail} />
         ))}
-        
+
         <StrategyStickyNav sections={navSections} />
       </div>
 

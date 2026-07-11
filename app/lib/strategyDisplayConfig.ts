@@ -25,3 +25,10 @@ export function getStrategyDisplayName(strategyKey: string, userEmail?: string |
   }
   return entry.default;
 }
+
+// Appends " Strategy" for card titles like "3 Red Candle Strategy", but
+// avoids the "Delta Hedging Strategy Strategy" tautology when the display
+// name (e.g. a per-user override) already ends in the word "Strategy".
+export function withStrategyLabel(displayName: string): string {
+  return /strategy\s*$/i.test(displayName) ? displayName : `${displayName} Strategy`;
+}

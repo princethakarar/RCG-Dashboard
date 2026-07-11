@@ -88,7 +88,7 @@ export const TopNav: React.FC = () => {
     return `${start} – ${end}`;
   };
 
-  const navItems = [
+  const allNavItems = [
     { name: 'Rising Alpha Creator Portfolio 3x', path: '/intern-portfolio' },
     { name: 'Rising Alpha Creator Portfolio Net Asset', path: '/net-asset' },
     { name: 'Strategies', path: '/strategies' },
@@ -96,6 +96,9 @@ export const TopNav: React.FC = () => {
     { name: 'Upload Data', path: '/upload' },
     { name: 'Backoffice', path: '/backoffice' },
   ];
+
+  const isHiddenIntern3xUser = (userEmail || '').trim().toLowerCase() === 'milanpatelrising1@gmail.com';
+  const navItems = allNavItems.filter(item => !(isHiddenIntern3xUser && item.path === '/intern-portfolio'));
 
   const checkActive = (path: string) => {
     if (path === '/intern-portfolio') {

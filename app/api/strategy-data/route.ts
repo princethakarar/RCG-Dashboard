@@ -1,17 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '../../lib/supabase';
-import { getUserId } from '../../lib/getUser';
+import { getUserId, getUserEmail } from '../../lib/getUser';
+import { isStrategyVisibleToUser } from '../../lib/strategyAccessConfig';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
     const userId = await getUserId(request);
+    const userEmail = await getUserEmail(request);
     const { searchParams } = new URL(request.url);
     const strategyName = searchParams.get('strategyName');
 
     if (!strategyName) {
       return NextResponse.json({ error: 'strategyName is required' }, { status: 400 });
+    }
+
+    if (!isStrategyVisibleToUser(strategyName, userEmail)) {
+      return NextResponse.json(
+        { error: 'You are not authorized to view data for this strategy.' },
+        { status: 403 }
+      );
     }
 
     const [dataRes, summaryRes] = await Promise.all([

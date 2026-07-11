@@ -7,6 +7,7 @@ import { Footer } from '../components/layout/Footer';
 import { UploadZone } from '../components/upload/UploadZone';
 import { NavUploadZone } from '../components/upload/NavUploadZone';
 import { StrategyUploadZone } from '../components/upload/StrategyUploadZone';
+import { HybridStrategyUploadZone } from '../components/upload/HybridStrategyUploadZone';
 import { MaxUpsideDownsideUploadZone } from '../components/upload/MaxUpsideDownsideUploadZone';
 import { PositionUploadZone } from '../components/upload/PositionUploadZone';
 import { useStrategyData } from '../hooks/useStrategyData';
@@ -14,7 +15,57 @@ import { useMaxUpsideDownside } from '../hooks/useMaxUpsideDownside';
 import { usePositionData } from '../hooks/usePositionData';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import { useCurrentUserEmail } from '../hooks/useCurrentUserEmail';
-import { getStrategyDisplayName } from '../lib/strategyDisplayConfig';
+import { getStrategyDisplayName, withStrategyLabel } from '../lib/strategyDisplayConfig';
+import { isStrategyVisibleToUser } from '../lib/strategyAccessConfig';
+
+const HYBRID_STRATEGY_KEY = 'Hybrid Adaptive Options Framework';
+
+function HybridUploadCard({ userEmail, onGlobalUploadSuccess }: { userEmail: string | null; onGlobalUploadSuccess: () => void }) {
+  const hybridDisplayName = getStrategyDisplayName(HYBRID_STRATEGY_KEY, userEmail);
+  const { dailyData: hybridData, refetch: refetchHybrid } = useStrategyData(HYBRID_STRATEGY_KEY);
+
+  const hybridFiles = React.useMemo(() => {
+    if (!hybridData || hybridData.length === 0) return [];
+    const sorted = [...hybridData].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    return [{
+      name: `${hybridDisplayName.replace(/\s+/g, '_')}_DayWise_PnL.xlsx`,
+      startDate: sorted[0].date as string,
+      endDate: sorted[sorted.length - 1].date as string,
+      rowCount: sorted.length,
+    }];
+  }, [hybridData, hybridDisplayName]);
+
+  const handleSuccess = () => {
+    refetchHybrid();
+    onGlobalUploadSuccess();
+    setTimeout(() => {
+      refetchHybrid();
+    }, 3000);
+  };
+
+  return (
+    <div className="grid grid-cols-1 gap-6 items-start mt-6">
+      <Card className="border border-[#EDE0E6] shadow-none rounded-2xl bg-white">
+        <CardHeader className="p-5 pb-2">
+          <CardTitle className="text-sm font-bold text-[#1A0A10] uppercase tracking-wide">
+            {withStrategyLabel(hybridDisplayName)}
+          </CardTitle>
+          <CardDescription className="text-xs text-[#9B8A92] font-semibold leading-relaxed">
+            Ingest daily P&amp;L strategy data for {hybridDisplayName} (Directional + Non-Directional legs).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-5 pt-0">
+          <HybridStrategyUploadZone
+            strategyName={HYBRID_STRATEGY_KEY}
+            displayName={hybridDisplayName}
+            files={hybridFiles}
+            onUploadSuccess={handleSuccess}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function UploadPage() {
   const userEmail = useCurrentUserEmail();
@@ -163,7 +214,7 @@ export default function UploadPage() {
           <Card className="border border-[#EDE0E6] shadow-none rounded-2xl bg-white">
             <CardHeader className="p-5 pb-2">
               <CardTitle className="text-sm font-bold text-[#1A0A10] uppercase tracking-wide">
-                {redCandleDisplayName} Strategy
+                {withStrategyLabel(redCandleDisplayName)}
               </CardTitle>
               <CardDescription className="text-xs text-[#9B8A92] font-semibold leading-relaxed">
                 Ingest daily P&amp;L strategy data from standard Algorest/Day-Wise P&amp;L exports.
@@ -182,7 +233,7 @@ export default function UploadPage() {
           <Card className="border border-[#EDE0E6] shadow-none rounded-2xl bg-white">
             <CardHeader className="p-5 pb-2">
               <CardTitle className="text-sm font-bold text-[#1A0A10] uppercase tracking-wide">
-                {soldierDisplayName} Strategy
+                {withStrategyLabel(soldierDisplayName)}
               </CardTitle>
               <CardDescription className="text-xs text-[#9B8A92] font-semibold leading-relaxed">
                 Ingest daily P&amp;L strategy data for {soldierDisplayName}.
@@ -198,6 +249,11 @@ export default function UploadPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Hybrid Adaptive Options Framework — visible only to the authorized user */}
+        {isStrategyVisibleToUser(HYBRID_STRATEGY_KEY, userEmail) && (
+          <HybridUploadCard userEmail={userEmail} onGlobalUploadSuccess={handleUploadSuccess} />
+        )}
 
         {/* Max Upside / Downside Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mt-6">

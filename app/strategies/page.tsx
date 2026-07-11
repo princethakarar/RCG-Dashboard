@@ -7,13 +7,15 @@ import { TopNav } from '../components/layout/TopNav';
 import { Footer } from '../components/layout/Footer';
 import { StrategyStickyNav } from '../components/layout/StrategyStickyNav';
 import { StrategyChart } from '../components/portfolio/StrategyChart';
+import { HybridStrategyChart } from '../components/portfolio/HybridStrategyChart';
 import { StrategyStatsGrid } from '../components/portfolio/StrategyStatsGrid';
 import { FolderOpen, ArrowRight, ShieldAlert, Loader } from 'lucide-react';
 import Link from 'next/link';
 import { useCurrentUserEmail } from '../hooks/useCurrentUserEmail';
 import { getStrategyDisplayName } from '../lib/strategyDisplayConfig';
+import { isStrategyVisibleToUser } from '../lib/strategyAccessConfig';
 
-const STRATEGIES = ['3 Red Candle', 'Soldier Pattern'];
+const ALL_STRATEGIES = ['3 Red Candle', 'Soldier Pattern', 'Hybrid Adaptive Options Framework'];
 
 function StrategySection({ strategyName, userEmail }: { strategyName: string; userEmail: string | null }) {
   const { dailyData: data, summaryStats: metrics, loading, error, refetch } = useStrategyData(strategyName);
@@ -143,13 +145,148 @@ function StrategySection({ strategyName, userEmail }: { strategyName: string; us
   );
 }
 
+function HybridStrategySection({ strategyName, userEmail }: { strategyName: string; userEmail: string | null }) {
+  const { dailyData: data, summaryStats: metrics, loading, error, refetch } = useStrategyData(strategyName);
+  const sectionId = `strategy-${strategyName.replace(/\s+/g, '-')}`;
+  const displayName = getStrategyDisplayName(strategyName, userEmail);
+
+  if (loading) {
+    return (
+      <div id={sectionId} className="flex-1 flex flex-col items-center justify-center py-40 select-none border-b border-[#EDE0E6] last:border-0 scroll-mt-20">
+        <Loader size={36} className="text-[#8B0A3D] animate-spin" />
+        <span className="text-xs font-semibold text-[#9B8A92] mt-3 font-sans">
+          Loading {displayName} data...
+        </span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div id={sectionId} className="flex-1 flex flex-col items-center justify-center py-20 px-8 text-center max-w-md mx-auto select-none border-b border-[#EDE0E6] last:border-0 scroll-mt-20">
+        <ShieldAlert size={36} className="text-red-600 mb-3" />
+        <h3 className="text-base font-extrabold text-[#1A0A10] tracking-tight">Error Loading {displayName} Data</h3>
+        <p className="text-xs text-[#9B8A92] mt-1.5 leading-relaxed font-sans">
+          {error}
+        </p>
+        <button
+          onClick={() => refetch()}
+          className="mt-5 px-4 py-2 text-xs font-bold text-white bg-[#8B0A3D] hover:bg-[#6B0830] rounded-xl transition-all shadow-sm active:scale-[0.98]"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  if (data.length === 0 || !metrics) {
+    return (
+      <div id={sectionId} className="flex-1 flex flex-col items-center justify-center py-20 px-8 text-center max-w-lg mx-auto select-none animate-fade-in border-b border-[#EDE0E6] last:border-0 scroll-mt-20">
+        <FolderOpen size={48} className="text-[#8B0A3D] mb-4" />
+        <h3 className="text-base font-extrabold text-[#1A0A10] tracking-tight">
+          No Data Found for {displayName}
+        </h3>
+        <p className="text-xs text-[#9B8A92] mt-2 max-w-xs mx-auto leading-relaxed font-sans">
+          Upload the Hybrid Adaptive Options Framework export in the Data Ingestion portal.
+        </p>
+        <Link
+          href="/upload"
+          className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-[#8B0A3D] hover:bg-[#6B0830] rounded-xl transition-all shadow-sm group font-sans"
+        >
+          <span>Go to Upload Page</span>
+          <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div id={sectionId} className="flex flex-col bg-white intern-portfolio-page border-b border-[#EDE0E6] pb-10 mb-6 last:border-0 last:pb-0 last:mb-0 scroll-mt-20" data-print-content>
+      {/* Print-only Report Header */}
+      <div data-print-header className="hidden print:flex justify-between items-center mb-4 pb-3 border-b-2 border-[#8B0A3D]">
+        <div className="flex items-center gap-2">
+          <Image src="/favicon.ico" alt="RCG" width={28} height={28} className="h-7 w-7" />
+          <div>
+            <div className="text-[10pt] font-bold text-[#8B0A3D]">RISING CAPITAL GROUP</div>
+            <div className="text-[7pt] text-[#9B8A92]">Strategy Analytics</div>
+          </div>
+        </div>
+        <div className="text-[7pt] text-[#9B8A92] text-right">
+          <div>Strategy: {displayName} · {Number(metrics.total_days) || 0} Trading Days</div>
+          <div>Generated: {new Date().toLocaleString('en-IN')}</div>
+        </div>
+      </div>
+
+      {/* Dynamic Page Header */}
+      <div className="w-full bg-white dashboard-container pt-5 md:pt-7 pb-2 border-b border-rcg-border/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 select-none">
+        <div className="flex flex-col">
+          <h1 className="text-xl sm:text-2xl lg:text-[28px] font-extrabold text-[#1A0A10] tracking-tight leading-tight flex flex-wrap items-baseline gap-x-2">
+            <span>Algorithmic Strategy <span className="text-[#8B0A3D]">{displayName}</span></span>
+          </h1>
+          <p className="text-xs sm:text-[13px] font-normal text-[#9B8A92] mt-1.5 sm:mt-2 font-sans">
+            {Number(metrics.total_days) || 0} Total Trading Days
+          </p>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <main className="dashboard-container py-4 md:py-6 w-full space-y-4 md:space-y-6">
+
+        {/* 1. Stats Grid */}
+        <div className="kpi-row" data-kpi-row>
+          <StrategyStatsGrid
+            summaryStats={{
+              winRate: Number(metrics.win_rate) || 0,
+              winDays: Number(metrics.win_days) || 0,
+              lossDays: Number(metrics.loss_days) || 0,
+              avgDailyPnl: Number(metrics.avg_daily_pnl) || 0,
+              bestDayPnl: Number(metrics.best_day_pnl) || 0,
+              worstDayPnl: Number(metrics.worst_day_pnl) || 0,
+            }}
+            totals={{
+              netPnl: Number(metrics.total_net_pnl) || 0,
+              trades: 0,
+              directionalPnl: Number(metrics.directional_pnl) || 0,
+              nonDirectionalPnl: Number(metrics.non_directional_pnl) || 0,
+              totalDays: Number(metrics.total_days) || 0,
+            }}
+          />
+        </div>
+
+        {/* 2. Performance Chart (3-line: Directional / Non-Directional / Net) */}
+        <div data-chart-card data-chart-full>
+          <HybridStrategyChart data={data} strategyName={strategyName} displayName={displayName} />
+        </div>
+
+        {/* Print-only Report Footer */}
+        <div data-print-footer className="hidden print:block">
+          <div className="flex justify-between items-center">
+            <span>© 2026 Rising Capital Group · DLL11706 · NSE F&O · NIFTY Options</span>
+            <span>&quot;Trust the data. Question the narrative.&quot; — Rising Capital Group</span>
+            <span>risingcapitalgroup.in</span>
+          </div>
+          <div className="mt-1 text-[#BBBBBB]">
+            Data derived from uploaded Excel files. Past performance does not guarantee future results. For internal analysis only.
+          </div>
+        </div>
+
+      </main>
+    </div>
+  );
+}
+
 export default function StrategiesPage() {
   const userEmail = useCurrentUserEmail();
 
-  const navSections = React.useMemo(() => STRATEGIES.map(s => ({
+  const visibleStrategies = React.useMemo(
+    () => ALL_STRATEGIES.filter(s => isStrategyVisibleToUser(s, userEmail)),
+    [userEmail]
+  );
+
+  const navSections = React.useMemo(() => visibleStrategies.map(s => ({
     id: `strategy-${s.replace(/\s+/g, '-')}`,
     label: getStrategyDisplayName(s, userEmail)
-  })), [userEmail]);
+  })), [visibleStrategies, userEmail]);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -157,8 +294,10 @@ export default function StrategiesPage() {
       <TopNav />
 
       <div className="flex-1 flex flex-col dashboard-with-sticky-nav pt-4">
-        {STRATEGIES.map(strategyName => (
-          <StrategySection key={strategyName} strategyName={strategyName} userEmail={userEmail} />
+        {visibleStrategies.map(strategyName => (
+          strategyName === 'Hybrid Adaptive Options Framework'
+            ? <HybridStrategySection key={strategyName} strategyName={strategyName} userEmail={userEmail} />
+            : <StrategySection key={strategyName} strategyName={strategyName} userEmail={userEmail} />
         ))}
 
         <StrategyStickyNav sections={navSections} />

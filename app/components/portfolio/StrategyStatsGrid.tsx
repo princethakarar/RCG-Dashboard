@@ -33,9 +33,14 @@ export const StrategyStatsGrid: React.FC<StrategyStatsGridProps> = ({ summarySta
 
   const winRatePercent = (summaryStats.winRate * 100).toFixed(1);
 
+  const directionalPnl = totals.directionalPnl as number | undefined;
+  const nonDirectionalPnl = totals.nonDirectionalPnl as number | undefined;
+  const hasPerLegPnl = directionalPnl !== undefined && nonDirectionalPnl !== undefined;
+  const totalDays = totals.totalDays as number | undefined;
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 select-none">
-      
+
       {/* Total Net P&L */}
       <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300 col-span-2 xl:col-span-1">
         <div className="flex items-start justify-between mb-3">
@@ -52,6 +57,44 @@ export const StrategyStatsGrid: React.FC<StrategyStatsGridProps> = ({ summarySta
           {totals?.netPnl >= 0 ? '+' : ''}{formatCurrency(totals?.netPnl || 0)}
         </h4>
       </div>
+
+      {hasPerLegPnl && (
+        <>
+          {/* Directional Net P&L */}
+          <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300">
+            <div className="flex items-start justify-between mb-3">
+              <div className="p-2 bg-[#EFF6FF] rounded-lg">
+                <TrendingUp size={18} className="text-[#2563EB]" />
+              </div>
+            </div>
+            <p className="text-[11px] font-bold text-[#9B8A92] uppercase tracking-wider mb-1 font-sans">
+              Directional Net P&amp;L
+            </p>
+            <h4 className={`text-xl sm:text-2xl font-black tabular-nums tracking-tight ${
+              (directionalPnl || 0) >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'
+            }`}>
+              {(directionalPnl || 0) >= 0 ? '+' : ''}{formatCurrency(directionalPnl || 0)}
+            </h4>
+          </div>
+
+          {/* Non-Directional Net P&L */}
+          <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300">
+            <div className="flex items-start justify-between mb-3">
+              <div className="p-2 bg-[#F0FDFA] rounded-lg">
+                <TrendingUp size={18} className="text-[#0D9488]" />
+              </div>
+            </div>
+            <p className="text-[11px] font-bold text-[#9B8A92] uppercase tracking-wider mb-1 font-sans">
+              Non-Directional Net P&amp;L
+            </p>
+            <h4 className={`text-xl sm:text-2xl font-black tabular-nums tracking-tight ${
+              (nonDirectionalPnl || 0) >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'
+            }`}>
+              {(nonDirectionalPnl || 0) >= 0 ? '+' : ''}{formatCurrency(nonDirectionalPnl || 0)}
+            </h4>
+          </div>
+        </>
+      )}
 
       {/* Win Rate */}
       <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300">
@@ -118,7 +161,7 @@ export const StrategyStatsGrid: React.FC<StrategyStatsGridProps> = ({ summarySta
         </h4>
       </div>
 
-      {/* Total Trades */}
+      {/* Total Trades / Total Trading Days */}
       <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300">
         <div className="flex items-start justify-between mb-3">
           <div className="p-2 bg-[#F8F4F6] rounded-lg">
@@ -126,10 +169,10 @@ export const StrategyStatsGrid: React.FC<StrategyStatsGridProps> = ({ summarySta
           </div>
         </div>
         <p className="text-[11px] font-bold text-[#9B8A92] uppercase tracking-wider mb-1 font-sans">
-          Total Trades
+          {totalDays !== undefined ? 'Total Trading Days' : 'Total Trades'}
         </p>
         <h4 className="text-xl sm:text-2xl font-black text-[#1A0A10] tabular-nums tracking-tight">
-          {totals?.trades || 0}
+          {totalDays !== undefined ? totalDays : (totals?.trades || 0)}
         </h4>
       </div>
 

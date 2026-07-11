@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { supabase } from '../../../lib/supabase';
 import { put } from '@vercel/blob';
-import { getUserId } from '../../../lib/getUser';
+import { getUserId, getUserEmail } from '../../../lib/getUser';
+import { isStrategyVisibleToUser } from '../../../lib/strategyAccessConfig';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,6 +12,7 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   try {
     const userId = await getUserId(req);
+    const userEmail = await getUserEmail(req);
 
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
@@ -24,7 +26,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing strategy identifier in request body' }, { status: 400 });
     }
 
-    const { strategyMeta, dailyData, totals, summaryStats } = JSON.parse(parsedDataStr) as Record<string, unknown> & { strategyMeta: Record<string, string>, dailyData: Record<string, unknown>[], totals: Record<string, number>, summaryStats: Record<string, number> };
+    if (!isStrategyVisibleToUser(strategyName, userEmail)) {
+      return NextResponse.json(
+        { error: 'You are not authorized to upload data for this strategy.' },
+        { status: 403 }
+      );
+    }
+
+    const { strategyMeta = {}, dailyData, totals, summaryStats } = JSON.parse(parsedDataStr) as Record<string, unknown> & { strategyMeta?: Record<string, string>, dailyData: Record<string, unknown>[], totals: Record<string, number>, summaryStats: Record<string, number> };
 
     // Optional backup to Vercel Blob with user-scoped path
     if (file) {
@@ -63,6 +72,8 @@ export async function POST(req: NextRequest) {
         net_pnl: d.net_pnl,
         cumulative_pnl: d.cumulative_pnl,
         result: d.result,
+        directional_pnl: d.directional_pnl ?? null,
+        non_directional_pnl: d.non_directional_pnl ?? null,
         user_id: userId,
       }));
 
@@ -73,8 +84,8 @@ export async function POST(req: NextRequest) {
     // Insert summary with user_id
     const summaryRow = {
       strategy_name: strategyName,
-      period: strategyMeta.period,
-      lot_size: strategyMeta.lotSize,
+      period: strategyMeta.period ?? null,
+      lot_size: strategyMeta.lotSize ?? null,
       win_days: summaryStats.winDays,
       loss_days: summaryStats.lossDays,
       best_day_pnl: summaryStats.bestDayPnl,
@@ -83,6 +94,9 @@ export async function POST(req: NextRequest) {
       win_rate: summaryStats.winRate,
       total_net_pnl: totals.netPnl,
       total_trades: totals.trades,
+      directional_pnl: totals.directionalPnl ?? null,
+      non_directional_pnl: totals.nonDirectionalPnl ?? null,
+      total_days: totals.totalDays ?? null,
       user_id: userId,
       updated_at: new Date().toISOString()
     };

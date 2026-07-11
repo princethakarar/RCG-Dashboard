@@ -323,6 +323,135 @@ self.addEventListener('message', (event) => {
       return;
     }
 
+    if (type === 'parse_hybrid_strategy') {
+      const wb = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+
+      const sheetName = wb.SheetNames[0];
+      if (!sheetName) {
+        throw new Error('The uploaded file has no sheets.');
+      }
+
+      const ws = wb.Sheets[sheetName];
+      const rawData = XLSX.utils.sheet_to_json(ws, { header: 1 }) as ExcelCellValue[][];
+
+      let headerRowIdx = -1;
+      for (let i = 0; i < Math.min(10, rawData.length); i++) {
+        const row = rawData[i];
+        if (!row || row.length === 0) continue;
+        const hasDate = row.some(cell => String(cell || '').trim().toLowerCase() === 'date');
+        const hasDirectional = row.some(cell => String(cell || '').trim().toLowerCase().includes('directional'));
+        if (hasDate && hasDirectional) {
+          headerRowIdx = i;
+          break;
+        }
+      }
+
+      if (headerRowIdx === -1) {
+        throw new Error('Could not find the column headers (Date, Directional) for the Hybrid Adaptive Options Framework format.');
+      }
+
+      const headers = rawData[headerRowIdx];
+      const findCol = (predicate: (h: string) => boolean) =>
+        headers.findIndex(h => predicate(String(h || '').trim().toLowerCase()));
+
+      const dateIdx = findCol(h => h === 'date');
+      const dayIdx = findCol(h => h === 'day');
+      const nonDirectionalIdx = findCol(h => h.includes('non') && h.includes('directional'));
+      const directionalIdx = findCol(h => h.includes('directional') && !h.includes('non'));
+
+      if (dateIdx === -1 || directionalIdx === -1) {
+        throw new Error('Required columns Date and Directional are missing.');
+      }
+
+      // A cell only counts as a real trading-day date if it's an actual Date
+      // object, a plausible Excel serial number (year 2000+), or a
+      // recognizable date string. A bare 0 / small number — a common artifact
+      // of "empty but number-formatted" cells (e.g. the totals row, or stray
+      // trailing rows past the real data) — must NOT be mistaken for a date;
+      // parseExcelDate's numeric branch has no plausibility floor of its own.
+      const MIN_PLAUSIBLE_SERIAL = 36526; // Excel serial for 2000-01-01
+      const parsePlausibleDate = (cellValue: unknown): string | null => {
+        if (cellValue instanceof Date) return parseExcelDate(cellValue);
+        if (typeof cellValue === 'number') {
+          return cellValue >= MIN_PLAUSIBLE_SERIAL ? parseExcelDate(cellValue) : null;
+        }
+        if (typeof cellValue === 'string' && cellValue.trim() !== '') {
+          return parseExcelDate(cellValue);
+        }
+        return null;
+      };
+
+      const dailyData: Record<string, unknown>[] = [];
+      let directionalTotal = 0;
+      let nonDirectionalTotal = 0;
+      let runningCumulative = 0;
+
+      for (let i = headerRowIdx + 1; i < rawData.length; i++) {
+        const row = rawData[i];
+        if (!row || row.length === 0) continue;
+
+        const dateStr = parsePlausibleDate(row[dateIdx] ?? null);
+        if (!dateStr) {
+          // Totals row, blank spacer row, or a stray trailing sheet artifact —
+          // not a trading day. Skip and keep scanning rather than stopping,
+          // so one malformed row can't cut off real data that follows it.
+          continue;
+        }
+
+        const directional = parseFloatValue(row[directionalIdx] ?? 0) || 0;
+        const nonDirectional = nonDirectionalIdx !== -1 ? parseFloatValueOrNull(row[nonDirectionalIdx]) : null;
+        const netPnl = directional + (nonDirectional ?? 0);
+        runningCumulative += netPnl;
+
+        directionalTotal += directional;
+        nonDirectionalTotal += (nonDirectional ?? 0);
+
+        dailyData.push({
+          date: dateStr,
+          day: String(row[dayIdx] || ''),
+          trades_count: null,
+          net_pnl: netPnl,
+          cumulative_pnl: runningCumulative,
+          result: netPnl >= 0 ? 'Win' : 'Loss',
+          directional_pnl: directional,
+          non_directional_pnl: nonDirectional,
+        });
+      }
+
+      const totalDays = dailyData.length;
+      const totalNetPnl = directionalTotal + nonDirectionalTotal;
+      const winDays = dailyData.filter(d => (d.net_pnl as number) > 0).length;
+      const lossDays = totalDays - winDays;
+      const dailyPnls = dailyData.map(d => d.net_pnl as number);
+      const bestDayPnl = dailyPnls.length ? Math.max(...dailyPnls) : 0;
+      const worstDayPnl = dailyPnls.length ? Math.min(...dailyPnls) : 0;
+      const avgDailyPnl = totalDays > 0 ? totalNetPnl / totalDays : 0;
+      const winRate = totalDays > 0 ? winDays / totalDays : 0;
+
+      self.postMessage({
+        success: true,
+        data: {
+          dailyData,
+          totals: {
+            netPnl: totalNetPnl,
+            trades: 0,
+            directionalPnl: directionalTotal,
+            nonDirectionalPnl: nonDirectionalTotal,
+            totalDays,
+          },
+          summaryStats: {
+            winDays,
+            lossDays,
+            bestDayPnl,
+            worstDayPnl,
+            avgDailyPnl,
+            winRate,
+          },
+        },
+      });
+      return;
+    }
+
     if (type === 'parse_max_upside_downside') {
       const wb = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
       

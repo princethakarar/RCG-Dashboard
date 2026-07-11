@@ -215,6 +215,27 @@ ALTER TABLE nav_series ADD CONSTRAINT nav_series_user_type_date_unique UNIQUE (u
 ALTER TABLE strategies_data DROP CONSTRAINT IF EXISTS strategies_data_strategy_name_date_key;
 ALTER TABLE strategies_data ADD CONSTRAINT strategies_data_user_name_date_unique UNIQUE (user_id, strategy_name, date);
 
+-- Fix: strategies_summary PK was originally scoped to strategy_name only
+-- (table-wide), which caused cross-user collisions on upload. Migrate to a
+-- surrogate id PK + a per-user composite uniqueness constraint, mirroring
+-- strategies_data above.
+ALTER TABLE strategies_summary DROP CONSTRAINT IF EXISTS strategies_summary_pkey;
+ALTER TABLE strategies_summary ADD COLUMN IF NOT EXISTS id BIGSERIAL;
+ALTER TABLE strategies_summary ADD CONSTRAINT strategies_summary_pkey PRIMARY KEY (id);
+ALTER TABLE strategies_summary
+  ADD CONSTRAINT strategies_summary_user_name_unique UNIQUE (user_id, strategy_name);
+
+-- Hybrid Adaptive Options Framework support: per-leg P&L columns.
+-- Nullable; unused by "3 Red Candle" / "Soldier Pattern" rows.
+ALTER TABLE strategies_data
+  ADD COLUMN IF NOT EXISTS directional_pnl NUMERIC(15, 4),
+  ADD COLUMN IF NOT EXISTS non_directional_pnl NUMERIC(15, 4);
+
+ALTER TABLE strategies_summary
+  ADD COLUMN IF NOT EXISTS directional_pnl NUMERIC(15, 4),
+  ADD COLUMN IF NOT EXISTS non_directional_pnl NUMERIC(15, 4),
+  ADD COLUMN IF NOT EXISTS total_days INTEGER;
+
 ALTER TABLE max_upside_downside DROP CONSTRAINT IF EXISTS max_upside_downside_date_key;
 ALTER TABLE max_upside_downside ADD CONSTRAINT max_upside_downside_user_date_unique UNIQUE (user_id, date);
 

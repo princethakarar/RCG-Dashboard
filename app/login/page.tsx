@@ -66,6 +66,7 @@ export default function LoginPage() {
             <p className="text-xs text-[#9B8A92] mt-1.5">
               Login to access our dashboard.
             </p>
+
           </div>
 
           {/* Inline Error Message (Badge/Pill style) */}

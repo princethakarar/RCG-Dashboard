@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSiteSettings, verifyPassword, signJWT, COOKIE_NAME } from '../../../lib/auth';
-import { supabase } from '../../../lib/supabase';
+import { getUserByEmail, createUser, verifyPassword, signJWT, COOKIE_NAME } from '../../../lib/auth';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -18,42 +17,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Please enter a valid email address' }, { status: 400 });
     }
 
-    // Get current hash and version from database
-    const settings = await getSiteSettings();
+    const existingUser = await getUserByEmail(email);
 
-    // Verify password against hash
-    const isValid = verifyPassword(password, settings.password_hash);
-    if (!isValid) {
-      return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
-    }
-
-    // Look up or create user record in the users table
     let userId: string;
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', email.toLowerCase())
-      .single();
+    let passwordVersion: number;
 
     if (existingUser) {
-      userId = existingUser.id;
-    } else {
-      // First-time login: create a new user record
-      const { data: newUser, error: createError } = await supabase
-        .from('users')
-        .insert({ email: email.toLowerCase() })
-        .select('id')
-        .single();
-
-      if (createError || !newUser) {
-        console.error('[login] Failed to create user record:', createError);
-        throw new Error('Failed to create user session');
+      // Returning user: verify against their own password.
+      const isValid = verifyPassword(password, existingUser.password_hash);
+      if (!isValid) {
+        return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
       }
+      userId = existingUser.id;
+      passwordVersion = existingUser.password_version;
+    } else {
+      // First-time login for this email: create the account with the
+      // password they just entered.
+      if (password.length < 6) {
+        return NextResponse.json({ error: 'New account password must be at least 6 characters long' }, { status: 400 });
+      }
+      const newUser = await createUser(email, password);
       userId = newUser.id;
+      passwordVersion = newUser.password_version;
     }
 
     // Sign the JWT with userId
-    const token = await signJWT(email, settings.password_version, userId);
+    const token = await signJWT(email, passwordVersion, userId);
 
     // Set cookie
     const response = NextResponse.json({ success: true, message: 'Logged in successfully' });

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyJWT, COOKIE_NAME, getCachedPasswordVersion } from './app/lib/auth-edge';
+import { verifyJWT, COOKIE_NAME, getUserPasswordVersion } from './app/lib/auth-edge';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -23,7 +23,7 @@ export async function middleware(request: NextRequest) {
         const payload = await verifyJWT(token);
         if (payload) {
           try {
-            const currentVersion = await getCachedPasswordVersion();
+            const currentVersion = await getUserPasswordVersion(payload.userId, payload.email);
             if (payload.passwordVersion === currentVersion) {
               return NextResponse.redirect(new URL('/intern-portfolio', request.url));
             }
@@ -62,8 +62,8 @@ export async function middleware(request: NextRequest) {
 
   // Fetch current site settings (leverages Upstash Redis caching)
   try {
-    const currentVersion = await getCachedPasswordVersion();
-    
+    const currentVersion = await getUserPasswordVersion(payload.userId, payload.email);
+
     // Check if password version matches
     if (payload.passwordVersion !== currentVersion) {
       console.warn(`[middleware] Stale password version ${payload.passwordVersion} (current: ${currentVersion}). Revoking session.`);

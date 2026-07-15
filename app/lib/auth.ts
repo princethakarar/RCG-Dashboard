@@ -7,10 +7,12 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_jwt_secret_please_change_
 const SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 const COOKIE_NAME = 'auth_token';
 
-// Redis cache key for settings
-const CACHE_KEY_SETTINGS = 'auth:site_settings';
+// Redis cache key prefix for per-user credentials
+const CACHE_KEY_USER_PREFIX = 'auth:user:';
 
-export interface SiteSettings {
+export interface UserRecord {
+  id: string;
+  email: string;
   password_hash: string;
   password_version: number;
 }
@@ -22,100 +24,99 @@ export interface JWTPayload {
 }
 
 /**
- * Fetch settings from DB with Redis fallback.
- * If no settings exist, seeds a default password "RCG@2030".
+ * Fetch a user's credentials by email, with Redis caching. Returns null if
+ * no account exists for that email yet.
  */
-export async function getSiteSettings(): Promise<SiteSettings> {
-  // Try Redis cache first
-  const cached = await getCachedData<SiteSettings>(CACHE_KEY_SETTINGS);
+export async function getUserByEmail(email: string): Promise<UserRecord | null> {
+  const normalizedEmail = email.toLowerCase();
+  const cacheKey = `${CACHE_KEY_USER_PREFIX}${normalizedEmail}`;
+
+  const cached = await getCachedData<UserRecord>(cacheKey);
   if (cached) {
     return cached;
   }
 
-  // Query Supabase
-  const { data: initialData, error } = await supabase
-    .from('site_settings')
-    .select('password_hash, password_version')
-    .order('id', { ascending: true })
-    .limit(1);
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, email, password_hash, password_version')
+    .eq('email', normalizedEmail)
+    .single();
 
-  if (error) {
-    if (error.code === 'PGRST205') {
-      console.warn('[auth] WARNING: site_settings table not found in Supabase. Falling back to default password "RCG@2030" (version 1). Please execute the SQL schema in Supabase to enable persistence and password updates.');
-      const fallbackSettings: SiteSettings = {
-        password_hash: bcrypt.hashSync('RCG@2030', 10),
-        password_version: 1,
-      };
-      return fallbackSettings;
-    }
-    console.error('[auth] Error fetching site settings:', error);
-    throw new Error('Database fetch failed');
+  if (error || !data) {
+    return null;
   }
 
-  let data = initialData;
-
-  // Seed default if settings table is empty
-  if (!data || data.length === 0) {
-    console.log('[auth] site_settings table empty. Seeding default settings...');
-    const defaultPassword = 'RCG@2030';
-    const salt = bcrypt.genSaltSync(10);
-    const hash = bcrypt.hashSync(defaultPassword, salt);
-    const defaultSettings = {
-      password_hash: hash,
-      password_version: 1,
-    };
-
-    const { data: inserted, error: insertError } = await supabase
-      .from('site_settings')
-      .insert([defaultSettings])
-      .select('password_hash, password_version')
-      .single();
-
-    if (insertError) {
-      console.error('[auth] Seeding default settings failed:', insertError);
-      // Fallback to locally computed version to prevent complete denial of service
-      return defaultSettings;
-    }
-    data = [inserted];
-  }
-
-  const settings: SiteSettings = {
-    password_hash: data[0].password_hash,
-    password_version: data[0].password_version,
-  };
-
-  // Cache in Redis for 10 minutes (or longer, invalidated on change)
-  await setCachedData(CACHE_KEY_SETTINGS, settings, 600);
-
-  return settings;
+  const user: UserRecord = data;
+  await setCachedData(cacheKey, user, 600);
+  return user;
 }
 
 /**
- * Update the default password in the database and invalidate the cache.
+ * Fetch a user's credentials by id (used when re-checking password version).
  */
-export async function updateDefaultPassword(newPassword: string): Promise<number> {
-  const settings = await getSiteSettings();
-  const nextVersion = settings.password_version + 1;
-  const salt = bcrypt.genSaltSync(10);
-  const hash = bcrypt.hashSync(newPassword, salt);
+export async function getUserById(userId: string): Promise<UserRecord | null> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, email, password_hash, password_version')
+    .eq('id', userId)
+    .single();
 
-  // Update existing row or insert if somehow none exists
+  if (error || !data) {
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Creates a new user account with its own password (first-login signup).
+ */
+export async function createUser(email: string, password: string): Promise<UserRecord> {
+  const normalizedEmail = email.toLowerCase();
+  const hash = bcrypt.hashSync(password, 10);
+
+  const { data, error } = await supabase
+    .from('users')
+    .insert({ email: normalizedEmail, password_hash: hash, password_version: 1 })
+    .select('id, email, password_hash, password_version')
+    .single();
+
+  if (error || !data) {
+    console.error('[auth] Failed to create user:', error);
+    throw new Error('Failed to create user account');
+  }
+
+  return data;
+}
+
+/**
+ * Updates a single user's password and invalidates their cache entry.
+ */
+export async function updateUserPassword(userId: string, email: string, newPassword: string): Promise<number> {
+  const user = await getUserById(userId);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const nextVersion = user.password_version + 1;
+  const hash = bcrypt.hashSync(newPassword, 10);
+
   const { error } = await supabase
-    .from('site_settings')
+    .from('users')
     .update({
       password_hash: hash,
       password_version: nextVersion,
       updated_at: new Date().toISOString(),
     })
-    .eq('password_version', settings.password_version); // optimistic locking
+    .eq('id', userId)
+    .eq('password_version', user.password_version); // optimistic locking
 
   if (error) {
     console.error('[auth] Failed to update password:', error);
     throw new Error('Failed to update password');
   }
 
-  // Invalidate cache
-  await invalidateCache(CACHE_KEY_SETTINGS);
+  await invalidateCache(`${CACHE_KEY_USER_PREFIX}${email.toLowerCase()}`);
 
   return nextVersion;
 }

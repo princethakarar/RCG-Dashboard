@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSiteSettings, updateDefaultPassword, verifyJWT, COOKIE_NAME } from '../../../lib/auth';
+import { getUserById, updateUserPassword, verifyJWT, COOKIE_NAME } from '../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,8 +16,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Invalid session token' }, { status: 401 });
     }
 
-    const currentSettings = await getSiteSettings();
-    if (payload.passwordVersion !== currentSettings.password_version) {
+    const currentUser = await getUserById(payload.userId);
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized: Account not found' }, { status: 401 });
+    }
+    if (payload.passwordVersion !== currentUser.password_version) {
       return NextResponse.json({ error: 'Unauthorized: Session has expired' }, { status: 401 });
     }
 
@@ -27,12 +30,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Password must be at least 6 characters long' }, { status: 400 });
     }
 
-    // Update the password in database and increment version
-    const newVersion = await updateDefaultPassword(newPassword);
+    // Update this user's own password and increment their version
+    const newVersion = await updateUserPassword(payload.userId, payload.email, newPassword);
 
     return NextResponse.json({
       success: true,
-      message: 'Password updated successfully. All other active sessions have been invalidated.',
+      message: 'Password updated successfully. Your other active sessions have been signed out.',
       newVersion,
     });
   } catch (error: unknown) {

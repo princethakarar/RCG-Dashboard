@@ -26,29 +26,31 @@ interface RedisGetResult {
   result: string | null;
 }
 
-interface SiteSettingsResponse {
+interface UserVersionResponse {
   password_version: number;
 }
 
 /**
- * Fetch password version using pure Edge-compatible fetch.
- * First tries Upstash Redis (if configured) via REST API,
- * then falls back to Supabase Rest API.
+ * Fetch a user's current password_version using pure Edge-compatible fetch.
+ * First tries Upstash Redis (if configured) via REST API, keyed by the same
+ * cache key auth.ts uses for that user's email, then falls back to the
+ * Supabase REST API by user id.
  */
-export async function getCachedPasswordVersion(): Promise<number> {
+export async function getUserPasswordVersion(userId: string, email: string): Promise<number> {
   const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
   const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (redisUrl && redisToken) {
     try {
-      const res = await fetch(`${redisUrl}/get/auth:site_settings`, {
+      const cacheKey = `auth:user:${email.toLowerCase()}`;
+      const res = await fetch(`${redisUrl}/get/${encodeURIComponent(cacheKey)}`, {
         headers: { Authorization: `Bearer ${redisToken}` },
         cache: 'no-store',
       });
       if (res.ok) {
         const json = (await res.json()) as RedisGetResult;
         if (json && json.result) {
-          const parsed = JSON.parse(json.result) as SiteSettingsResponse;
+          const parsed = JSON.parse(json.result) as UserVersionResponse;
           if (parsed && typeof parsed.password_version === 'number') {
             return parsed.password_version;
           }
@@ -68,7 +70,7 @@ export async function getCachedPasswordVersion(): Promise<number> {
   }
 
   try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/site_settings?select=password_version&order=id.asc&limit=1`, {
+    const res = await fetch(`${supabaseUrl}/rest/v1/users?select=password_version&id=eq.${userId}&limit=1`, {
       headers: {
         apikey: supabaseServiceKey,
         Authorization: `Bearer ${supabaseServiceKey}`,
@@ -77,19 +79,18 @@ export async function getCachedPasswordVersion(): Promise<number> {
     });
 
     if (!res.ok) {
-      console.warn(`[auth-edge] site_settings table not found or query failed (${res.status}). Falling back to version 1.`);
-      return 1;
+      throw new Error(`users lookup failed with status ${res.status}`);
     }
 
-    const data = (await res.json()) as SiteSettingsResponse[];
+    const data = (await res.json()) as UserVersionResponse[];
     if (!data || data.length === 0) {
-      return 1;
+      throw new Error(`no user found for id ${userId}`);
     }
 
     return data[0].password_version;
   } catch (err) {
-    console.error('[auth-edge] Failed site settings fetch fallback:', err);
-    return 1;
+    console.error('[auth-edge] Failed user version fetch fallback:', err);
+    throw err;
   }
 }
 

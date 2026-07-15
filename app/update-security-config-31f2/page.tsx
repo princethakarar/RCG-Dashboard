@@ -43,7 +43,7 @@ export default function ChangePasswordPage() {
         throw new Error(data.error || 'Failed to update password');
       }
 
-      setSuccess('Password updated successfully. All active sessions have been invalidated. Redirecting to login...');
+      setSuccess('Password updated successfully. Your other active sessions have been signed out. Redirecting to login...');
       
       // Auto logout and redirect to login page after 3 seconds
       setTimeout(async () => {
@@ -85,10 +85,10 @@ export default function ChangePasswordPage() {
           {/* Heading */}
           <div className="text-center mb-6">
             <h1 className="text-xl font-bold tracking-tight text-[#1A0A10]">
-              Rotate Portal Password
+              Change Your Password
             </h1>
             <p className="text-xs text-[#9B8A92] mt-1.5">
-              Change the shared password for all portal access.
+              Update the password for your account only. Other users are not affected.
             </p>
           </div>
 

@@ -242,6 +242,16 @@ ALTER TABLE max_upside_downside ADD CONSTRAINT max_upside_downside_user_date_uni
 ALTER TABLE position_data DROP CONSTRAINT IF EXISTS position_data_date_key;
 ALTER TABLE position_data ADD CONSTRAINT position_data_user_date_unique UNIQUE (user_id, date);
 
+-- Fix: nav_forecast's PRIMARY KEY was left scoped to dashboard_type alone
+-- (table-wide) when the other tables above were migrated to per-user
+-- constraints. That means only one account in the whole system could ever
+-- hold a '3x' forecast row and one a 'net' row -- any other account's NAV
+-- upload fails with "duplicate key value violates unique constraint
+-- nav_forecast_pkey". Migrate to a composite per-user PK, mirroring
+-- nav_series_user_type_date_unique above.
+ALTER TABLE nav_forecast DROP CONSTRAINT IF EXISTS nav_forecast_pkey;
+ALTER TABLE nav_forecast ADD CONSTRAINT nav_forecast_pkey PRIMARY KEY (user_id, dashboard_type);
+
 -- 5. RLS Policies
 --    Only allow operations where user_id matches the authenticated user.
 --    Uses a custom session variable set server-side.
@@ -319,6 +329,35 @@ DROP POLICY IF EXISTS users_self ON users;
 CREATE POLICY users_self ON users
   USING (id = current_user_id())
   WITH CHECK (id = current_user_id());
+
+-- =============================================================================
+-- Per-user passwords (replaces the single shared site_settings password)
+-- =============================================================================
+-- 1. Add per-user credential columns.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_version INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+-- 2. Backfill any pre-existing users (created under the old shared-password
+--    system) with the current shared hash as their starting password, so
+--    they keep working until they change it via the change-password page.
+UPDATE users u
+SET password_hash = s.password_hash
+FROM (SELECT password_hash FROM site_settings ORDER BY id ASC LIMIT 1) s
+WHERE u.password_hash IS NULL;
+
+-- 3. Going forward every user is created with their own password at signup,
+--    so this column should be required -- but only enforce that once every
+--    existing row actually has a hash (guards against site_settings being
+--    empty/missing when this script runs).
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM users WHERE password_hash IS NULL) THEN
+    ALTER TABLE users ALTER COLUMN password_hash SET NOT NULL;
+  ELSE
+    RAISE NOTICE 'Some users still have a NULL password_hash (no site_settings row to backfill from). Skipping NOT NULL constraint -- set their passwords manually, then re-run this ALTER.';
+  END IF;
+END $$;
 
 -- =============================================================================
 -- Backoffice Clients & Data

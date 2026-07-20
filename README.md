@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="./screenshots/hero.png" alt="RCG Dashboard Hero" width="800" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+  <img src="./Sample Images/hero.png" alt="RCG Dashboard Hero" width="800" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
 </p>
 
 <p align="center">
@@ -49,6 +49,10 @@ sequenceDiagram
 
 ### 📊 Charts & Data Visualizations
 Interactive, robust financial charts powered by **Recharts**. The dashboard dynamically updates net asset values, strategy performance, and historical data, giving RCG immediate visibility into critical metrics.
+
+<p align="center">
+  <img src="./Sample Images/Statistics Page.png" alt="Statistics Page" width="800" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); margin-top: 16px; margin-bottom: 16px;">
+</p>
 
 ### 📑 Export Reports
 Generate and export comprehensive financial reports with a single click. The system supports downloading clean, formatted data as **PDFs** and **Excel (.xlsx)** files for external audits and internal team sharing.

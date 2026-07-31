@@ -7,6 +7,7 @@ import {
   parseNavValue,
   ExcelCellValue
 } from '../lib/excelParser';
+import { parseNiftyOhlcSheet } from '../lib/niftyOhlcCalculations';
 
 self.addEventListener('message', (event) => {
   const { type, arrayBuffer } = event.data;
@@ -592,6 +593,33 @@ self.addEventListener('message', (event) => {
             stoppedReason: stoppedReason || 'Reached end of data without encountering invalid rows.'
           }
         }
+      });
+      return;
+    }
+
+    if (type === 'parse_nifty_ohlc') {
+      // getNiftyData.py output: a single sheet with header row
+      // Date, Open, High, Low, Close, where Date is a plain dd-mm-yyyy STRING
+      // (not an Excel date cell). cellDates only matters if someone re-saved the
+      // file and Excel converted that column to real dates; parseTradeDate
+      // handles both explicitly rather than relying on SheetJS coercion.
+      const wb = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+
+      const sheetName = wb.SheetNames[0];
+      if (!sheetName) {
+        throw new Error('The uploaded file has no sheets.');
+      }
+
+      const ws = wb.Sheets[sheetName];
+      const rawData = XLSX.utils.sheet_to_json(ws, { header: 1 }) as ExcelCellValue[][];
+
+      const { rows, skipped } = parseNiftyOhlcSheet(rawData);
+
+      console.log(`Extracted ${rows.length} valid Nifty OHLC rows, skipped ${skipped.length}.`);
+
+      self.postMessage({
+        success: true,
+        data: { rows, skipped },
       });
       return;
     }

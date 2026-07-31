@@ -1,25 +1,41 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { parseNiftyWeeklyCsv } from '../../lib/niftyWeeklyCalculations';
+import { unstable_noStore as noStore } from 'next/cache';
+import { fetchNiftyOhlcRows } from '../../lib/niftyOhlcServer';
 import { computeNiftyMonthlyBenchmark } from '../../lib/niftyMonthlyCalculations';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  try {
-    const filePath = path.join(process.cwd(), 'data', 'nifty50_weekly_data.csv');
-    const csvText = fs.readFileSync(filePath, 'utf8');
-    const rows = parseNiftyWeeklyCsv(csvText);
-    const result = computeNiftyMonthlyBenchmark(rows);
+  noStore();
 
-    if (!result) {
-      return NextResponse.json({ error: 'Insufficient weekly data to compute monthly benchmark' }, { status: 404 });
+  try {
+    const rows = await fetchNiftyOhlcRows();
+
+    if (rows.length === 0) {
+      return NextResponse.json({ empty: true, reason: 'no-data' }, { headers: noCacheHeaders() });
     }
 
-    return NextResponse.json(result);
+    const result = computeNiftyMonthlyBenchmark(rows);
+
+    // Fewer than two calendar months of data — no prior-month baseline exists,
+    // so there is nothing to chart. Not an error.
+    if (!result || result.windowPoints.length === 0) {
+      return NextResponse.json({ empty: true, reason: 'insufficient-data' }, { headers: noCacheHeaders() });
+    }
+
+    return NextResponse.json(result, { headers: noCacheHeaders() });
   } catch (error: unknown) {
     console.error('[nifty-monthly] Error:', error);
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
+}
+
+function noCacheHeaders(): Record<string, string> {
+  return {
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+    'Pragma': 'no-cache',
+    'Surrogate-Control': 'no-store',
+    'CDN-Cache-Control': 'no-store',
+    'Vercel-CDN-Cache-Control': 'no-store',
+  };
 }

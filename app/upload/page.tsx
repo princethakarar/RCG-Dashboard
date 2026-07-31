@@ -10,9 +10,11 @@ import { StrategyUploadZone } from '../components/upload/StrategyUploadZone';
 import { HybridStrategyUploadZone } from '../components/upload/HybridStrategyUploadZone';
 import { MaxUpsideDownsideUploadZone } from '../components/upload/MaxUpsideDownsideUploadZone';
 import { PositionUploadZone } from '../components/upload/PositionUploadZone';
+import { NiftyOhlcUploadZone } from '../components/upload/NiftyOhlcUploadZone';
 import { useStrategyData } from '../hooks/useStrategyData';
 import { useMaxUpsideDownside } from '../hooks/useMaxUpsideDownside';
 import { usePositionData } from '../hooks/usePositionData';
+import { useNiftyOhlc } from '../hooks/useNiftyOhlc';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import { useCurrentUserEmail } from '../hooks/useCurrentUserEmail';
 import { getStrategyDisplayName, withStrategyLabel } from '../lib/strategyDisplayConfig';
@@ -76,6 +78,7 @@ export default function UploadPage() {
   const { dailyData: soldierData, refetch: refetchSoldier } = useStrategyData('Soldier Pattern');
   const { data: maxUpsideDownsideData, refetch: refetchMaxUpsideDownside } = useMaxUpsideDownside();
   const { data: positionData, refetch: refetchPosition } = usePositionData();
+  const { data: niftyOhlc, refetch: refetchNiftyOhlc } = useNiftyOhlc();
 
   const handleUploadSuccess = () => {
     // Immediate refetch
@@ -84,6 +87,7 @@ export default function UploadPage() {
     refetchSoldier();
     refetchMaxUpsideDownside();
     refetchPosition();
+    refetchNiftyOhlc();
     // Safety-net second refetch after 3s to catch propagation delays
     setTimeout(() => {
       refetch();
@@ -91,6 +95,7 @@ export default function UploadPage() {
       refetchSoldier();
       refetchMaxUpsideDownside();
       refetchPosition();
+      refetchNiftyOhlc();
     }, 3000);
   };
 
@@ -148,6 +153,16 @@ export default function UploadPage() {
       rowCount: sorted.length,
     }];
   }, [positionData]);
+
+  const niftyOhlcFiles = React.useMemo(() => {
+    if (!niftyOhlc || niftyOhlc.rowCount === 0) return [];
+    return [{
+      name: 'Nifty_Daily_OHLC.xlsx',
+      startDate: niftyOhlc.startDate ?? undefined,
+      endDate: niftyOhlc.endDate ?? undefined,
+      rowCount: niftyOhlc.rowCount,
+    }];
+  }, [niftyOhlc]);
 
 
   return (
@@ -284,9 +299,29 @@ export default function UploadPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-5 pt-0">
-              <PositionUploadZone 
+              <PositionUploadZone
                 files={positionFiles}
-                onUploadSuccess={handleUploadSuccess} 
+                onUploadSuccess={handleUploadSuccess}
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Nifty OHLC Section — drives the Weekly / Monthly Target charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mt-6">
+          <Card className="border border-[#EDE0E6] shadow-none rounded-2xl bg-white">
+            <CardHeader className="p-5 pb-2">
+              <CardTitle className="text-sm font-bold text-[#1A0A10] uppercase tracking-wide">
+                Nifty OHLC Data
+              </CardTitle>
+              <CardDescription className="text-xs text-[#9B8A92] font-semibold leading-relaxed">
+                Ingest daily Nifty 50 Open/High/Low/Close data. Drives the Weekly &amp; Monthly Target charts on the Statistics page.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-5 pt-0">
+              <NiftyOhlcUploadZone
+                files={niftyOhlcFiles}
+                onUploadSuccess={handleUploadSuccess}
               />
             </CardContent>
           </Card>

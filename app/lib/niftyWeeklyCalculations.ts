@@ -1,38 +1,31 @@
 import { formatDate } from './formatters';
 import { computeTargetConsistency, TargetConsistencyResult } from './targetConsistencyEngine';
+import { WEEKLY_TARGET_RETURN, TARGET_WINDOW_YEARS } from './niftyTargetConfig';
+import {
+  NiftyOhlcRow,
+  deriveWeeklyCloses,
+  normalizeOhlcRows,
+  windowStartExclusive,
+} from './niftyOhlcCalculations';
 
-// Fixed weekly return target (percent) — replaces the old 5-year rolling average benchmark.
-export const WEEKLY_TARGET_RETURN = 0.225;
+export { WEEKLY_TARGET_RETURN };
 
-// Size of the trailing window used for the chart + summary cards (last 2 years).
-export const WEEKS_IN_WINDOW = 104; // last 2 years (was 52)
+/**
+ * Weekly target consistency, computed from raw daily Nifty OHLC rows.
+ *
+ * Weeks are ISO weeks (Mon–Sun). A week's return is close-to-close from the last
+ * trading day of the previous week to the last trading day of this week; the
+ * first week in the dataset has no prior week and is dropped by the engine.
+ * The charted window is the last `TARGET_WINDOW_YEARS` years measured back from
+ * the most recent trade_date in the data.
+ */
+export function computeNiftyWeeklyBenchmark(rows: NiftyOhlcRow[]): TargetConsistencyResult | null {
+  const sorted = normalizeOhlcRows(rows);
+  if (sorted.length === 0) return null;
 
-export interface NiftyWeeklyRow {
-  date: string; // YYYY-MM-DD, week-ending
-  high: number;
-  low: number;
-  close: number;
-}
+  const weeklyCloses = deriveWeeklyCloses(sorted);
+  const maxTradeDate = sorted[sorted.length - 1].trade_date;
+  const start = windowStartExclusive(maxTradeDate, TARGET_WINDOW_YEARS, 'day');
 
-// CSV columns: Date (DD-MM-YYYY), High, Low, Close
-export function parseNiftyWeeklyCsv(csvText: string): NiftyWeeklyRow[] {
-  const lines = csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
-  const rows = lines.slice(1); // skip header
-  const parsed = rows.map((line) => {
-    const [dateStr, high, low, close] = line.split(',');
-    const [d, m, y] = dateStr.trim().split('-');
-    return {
-      date: `${y}-${m}-${d}`,
-      high: Number(high),
-      low: Number(low),
-      close: Number(close),
-    };
-  });
-  parsed.sort((a, b) => a.date.localeCompare(b.date));
-  return parsed;
-}
-
-export function computeNiftyWeeklyBenchmark(rows: NiftyWeeklyRow[]): TargetConsistencyResult | null {
-  const closes = rows.map((r) => ({ date: r.date, close: r.close }));
-  return computeTargetConsistency(closes, WEEKLY_TARGET_RETURN, WEEKS_IN_WINDOW, formatDate);
+  return computeTargetConsistency(weeklyCloses, WEEKLY_TARGET_RETURN, start, formatDate);
 }

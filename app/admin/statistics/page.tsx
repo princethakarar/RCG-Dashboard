@@ -12,6 +12,13 @@ import { PLvsLOTChart } from '../../components/portfolio/PLvsLOTChart';
 import { TargetConsistencyChart } from '../../components/portfolio/TargetConsistencyChart';
 import { usePositionData } from '../../hooks/usePositionData';
 import { formatDateFull, formatMonthYear } from '../../lib/formatters';
+import {
+  WEEKLY_TARGET_RETURN,
+  MONTHLY_TARGET_RETURN,
+  WEEKLY_TARGET_DECIMALS,
+  MONTHLY_TARGET_DECIMALS,
+  TARGET_WINDOW_LABEL,
+} from '../../lib/niftyTargetConfig';
 import { FolderOpen, ArrowRight, ShieldAlert, Loader } from 'lucide-react';
 import Link from 'next/link';
 
@@ -22,11 +29,34 @@ const STATISTICS_SECTIONS = [
   { id: 'section-monthly-target', label: 'Monthly Target' },
 ];
 
+// Shown when no Nifty OHLC data has been uploaded yet, in place of an empty chart.
+const NiftyOhlcEmptyState = ({ periodNounPlural }: { periodNounPlural: string }) => (
+  <div className="flex flex-col items-center justify-center py-14 px-8 text-center border border-dashed border-[#EDE0E6] rounded-2xl select-none">
+    <FolderOpen size={32} className="text-[#8B0A3D] mb-3" />
+    <p className="text-xs font-bold text-[#1A0A10] tracking-tight">
+      Upload Nifty OHLC data to see this chart
+    </p>
+    <p className="text-[11px] text-[#9B8A92] mt-1.5 max-w-sm leading-relaxed font-sans">
+      The {periodNounPlural} target chart is calculated from daily Nifty Open/High/Low/Close data.
+    </p>
+    <Link
+      href="/upload"
+      className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-[11px] font-bold text-white bg-[#8B0A3D] hover:bg-[#6B0830] rounded-xl transition-all shadow-sm group font-sans"
+    >
+      <span>Go to Upload Page</span>
+      <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+    </Link>
+  </div>
+);
+
 export default function StatisticsPage() {
   const { data: maxData, loading: maxLoading, error: maxError, refetch: maxRefetch } = useMaxUpsideDownside();
   const { data: positionData, loading: positionLoading, error: positionError, refetch: positionRefetch } = usePositionData();
-  const { data: weeklyBenchmark, loading: weeklyLoading, error: weeklyError } = useNiftyWeeklyBenchmark();
-  const { data: monthlyBenchmark, loading: monthlyLoading, error: monthlyError } = useNiftyMonthlyBenchmark();
+  const { data: weeklyBenchmark, empty: weeklyEmpty, loading: weeklyLoading, error: weeklyError } = useNiftyWeeklyBenchmark();
+  const { data: monthlyBenchmark, empty: monthlyEmpty, loading: monthlyLoading, error: monthlyError } = useNiftyMonthlyBenchmark();
+
+  const weeklyTargetDisplay = `${WEEKLY_TARGET_RETURN.toFixed(WEEKLY_TARGET_DECIMALS)}%`;
+  const monthlyTargetDisplay = `${MONTHLY_TARGET_RETURN.toFixed(MONTHLY_TARGET_DECIMALS)}%`;
 
   const renderContent = () => {
     if (maxLoading || positionLoading) {
@@ -132,22 +162,26 @@ export default function StatisticsPage() {
             {weeklyError}
           </div>
         )}
-        {!weeklyLoading && !weeklyError && weeklyBenchmark && (
+        {!weeklyLoading && !weeklyError && (weeklyBenchmark || weeklyEmpty) && (
           <div id="section-weekly-target" className="scroll-mt-20 space-y-3">
             <h3 className="text-[10px] sm:text-[11px] font-bold text-[#9B8A92] uppercase tracking-wider font-sans">
               NIFTY WEEKLY TARGET
             </h3>
-            <TargetConsistencyChart
-              data={weeklyBenchmark}
-              periodNoun="week"
-              periodNounPlural="weeks"
-              windowLabel="Last 2Y"
-              targetDecimals={3}
-              achievedPctDecimals={0}
-              sectionTitle="Weekly Target Consistency"
-              sectionSubtitle="Last 104 weeks — tracking performance against a fixed 0.225% weekly return target"
-              formatTooltipDate={formatDateFull}
-            />
+            {weeklyBenchmark ? (
+              <TargetConsistencyChart
+                data={weeklyBenchmark}
+                periodNoun="week"
+                periodNounPlural="weeks"
+                windowLabel={TARGET_WINDOW_LABEL}
+                targetDecimals={WEEKLY_TARGET_DECIMALS}
+                achievedPctDecimals={0}
+                sectionTitle="Weekly Target Consistency"
+                sectionSubtitle={`Last ${weeklyBenchmark.windowPoints.length} weeks — tracking performance against a fixed ${weeklyTargetDisplay} weekly return target`}
+                formatTooltipDate={formatDateFull}
+              />
+            ) : (
+              <NiftyOhlcEmptyState periodNounPlural="weekly" />
+            )}
           </div>
         )}
 
@@ -165,22 +199,26 @@ export default function StatisticsPage() {
             {monthlyError}
           </div>
         )}
-        {!monthlyLoading && !monthlyError && monthlyBenchmark && (
+        {!monthlyLoading && !monthlyError && (monthlyBenchmark || monthlyEmpty) && (
           <div id="section-monthly-target" className="scroll-mt-20 statistics-last-section-pad space-y-3">
             <h3 className="text-[10px] sm:text-[11px] font-bold text-[#9B8A92] uppercase tracking-wider font-sans">
               NIFTY MONTHLY TARGET
             </h3>
-            <TargetConsistencyChart
-              data={monthlyBenchmark}
-              periodNoun="month"
-              periodNounPlural="months"
-              windowLabel="Last 2Y"
-              targetDecimals={2}
-              achievedPctDecimals={1}
-              sectionTitle="Monthly Target Consistency"
-              sectionSubtitle="Last 24 months — tracking performance against a fixed 1.00% monthly return target"
-              formatTooltipDate={formatMonthYear}
-            />
+            {monthlyBenchmark ? (
+              <TargetConsistencyChart
+                data={monthlyBenchmark}
+                periodNoun="month"
+                periodNounPlural="months"
+                windowLabel={TARGET_WINDOW_LABEL}
+                targetDecimals={MONTHLY_TARGET_DECIMALS}
+                achievedPctDecimals={1}
+                sectionTitle="Monthly Target Consistency"
+                sectionSubtitle={`Last ${monthlyBenchmark.windowPoints.length} months — tracking performance against a fixed ${monthlyTargetDisplay} monthly return target`}
+                formatTooltipDate={formatMonthYear}
+              />
+            ) : (
+              <NiftyOhlcEmptyState periodNounPlural="monthly" />
+            )}
           </div>
         )}
 

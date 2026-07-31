@@ -13,6 +13,8 @@ export const CACHE_KEYS = {
   DASHBOARD_FORECAST: 'dashboard:forecast',
   DASHBOARD_FILES: 'dashboard:files',
   DASHBOARD_TRADING: 'dashboard:trading_data',
+  // Not user-scoped: nifty_ohlc is a single shared index series (see schema.sql).
+  NIFTY_OHLC: 'dashboard:nifty_ohlc',
 } as const;
 
 // Default TTL: 24 hours in seconds

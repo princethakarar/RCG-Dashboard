@@ -391,6 +391,35 @@ CREATE TABLE IF NOT EXISTS client_data (
   UNIQUE (client_id, date)
 );
 
+-- =============================================================================
+-- Nifty daily OHLC (source for the Weekly / Monthly Target charts)
+-- =============================================================================
+-- Raw daily index data uploaded from the getNiftyData.py Excel export
+-- (columns: Date, Open, High, Low, Close; Date is a dd-mm-yyyy string).
+--
+-- Deliberately NOT user-scoped: ^NSEI is a single public index series shared by
+-- the whole system, mirroring the shared CSV this table replaces. One upload
+-- updates the Weekly/Monthly Target charts for every account. Uploads upsert on
+-- trade_date, so re-uploading an overlapping range corrects values in place
+-- rather than duplicating rows.
+CREATE TABLE IF NOT EXISTS nifty_ohlc (
+  id          SERIAL PRIMARY KEY,
+  trade_date  DATE NOT NULL UNIQUE,
+  open        NUMERIC NOT NULL,
+  high        NUMERIC NOT NULL,
+  low         NUMERIC NOT NULL,
+  close       NUMERIC NOT NULL,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_nifty_ohlc_trade_date ON nifty_ohlc(trade_date);
+
+-- RLS on with no policy: the anon key (which ships to the browser) gets nothing,
+-- while the server-side service-role client used by the API routes bypasses RLS
+-- as usual. Reads/writes are only ever reachable through the authenticated
+-- /api/nifty-* routes.
+ALTER TABLE nifty_ohlc ENABLE ROW LEVEL SECURITY;
+
 CREATE INDEX IF NOT EXISTS idx_clients_user_id ON clients(user_id);
 CREATE INDEX IF NOT EXISTS idx_client_data_client_id ON client_data(client_id);
 CREATE INDEX IF NOT EXISTS idx_client_data_date ON client_data(date);

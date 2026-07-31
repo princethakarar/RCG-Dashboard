@@ -28,10 +28,17 @@ export interface TargetConsistencyResult {
   avgBelowTargetInWindow: number | null;
 }
 
+/**
+ * @param windowStartExclusive Period key (same format as `PeriodClose.date`)
+ *   forming an EXCLUSIVE lower bound on the charted window. Compared
+ *   lexicographically, which is why both key formats are zero-padded and
+ *   big-endian (`YYYY-MM-DD` / `YYYY-MM`). Callers derive this from the data's
+ *   own most recent date, so the window never depends on the wall clock.
+ */
 export function computeTargetConsistency(
   closes: PeriodClose[],
   target: number,
-  windowSize: number,
+  windowStartExclusive: string,
   formatDisplay: (date: string) => string
 ): TargetConsistencyResult | null {
   if (!closes || closes.length < 2) return null;
@@ -69,8 +76,9 @@ export function computeTargetConsistency(
     };
   });
 
-  // Trailing window slice (most recent `windowSize` periods) for the chart.
-  const windowPoints = enriched.slice(-windowSize);
+  // Trailing window for the chart, bounded by date rather than by a fixed count
+  // so it tracks the uploaded data's own range.
+  const windowPoints = enriched.filter((e) => e.date > windowStartExclusive);
 
   const achievedInWindow = windowPoints.filter((w) => w.achieved).length;
   const longestRecoveryStreakInWindow = windowPoints.reduce(

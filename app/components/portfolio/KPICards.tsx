@@ -35,10 +35,10 @@ export const KPICards: React.FC<KPICardsProps> = ({ metrics, isNetAsset = false 
   };
 
   return (
-    <div className="kpi-grid select-none">
+    <div className="kpi-grid select-none" data-report-grid="2">
       
       {/* CARD 1: Running ROI on Deposit */}
-      <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card>
+      <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card data-report-block>
         <CardHeader className="kpi-card-header pb-2">
           <CardDescription className="kpi-card-label font-semibold uppercase tracking-wide text-[#9B8A92] flex items-center justify-between gap-1">
             <span className="leading-tight">{isNetAsset ? 'RUNNING ROI ON NET ASSET' : 'RUNNING ROI ON DEPOSIT'}</span>
@@ -62,7 +62,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ metrics, isNetAsset = false 
       </Card>
 
       {/* CARD 2: Win Ratio */}
-      <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card>
+      <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card data-report-block>
         <CardHeader className="kpi-card-header pb-2">
           <CardDescription className="kpi-card-label font-semibold uppercase tracking-wide text-[#9B8A92] flex items-center justify-between gap-1">
             <span className="leading-tight">WIN RATIO</span>
@@ -103,7 +103,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ metrics, isNetAsset = false 
       </Card>
 
       {/* CARD 3: Working Days */}
-      <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card>
+      <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card data-report-block>
         <CardHeader className="kpi-card-header pb-2">
           <CardDescription className="kpi-card-label font-semibold uppercase tracking-wide text-[#9B8A92] flex items-center justify-between gap-1">
             <span className="leading-tight">WORKING DAYS</span>
@@ -121,10 +121,10 @@ export const KPICards: React.FC<KPICardsProps> = ({ metrics, isNetAsset = false 
       </Card>
 
       {/* CARD 4: Avg Portfolio Swing */}
-      <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card>
+      <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card data-report-block>
         <CardHeader className="kpi-card-header pb-2">
           <CardDescription className="kpi-card-label font-semibold uppercase tracking-wide text-[#9B8A92] flex items-center justify-between gap-1">
-            <span className="leading-tight">AVG PORTFOLIO SWING</span>
+            <span className="leading-tight">Avg Per Day Return (%)</span>
             <Activity className="w-3.5 h-3.5 text-[#1A0A10] shrink-0" />
           </CardDescription>
         </CardHeader>
@@ -133,13 +133,13 @@ export const KPICards: React.FC<KPICardsProps> = ({ metrics, isNetAsset = false 
             {avgAbsDailyROI.toFixed(2)}%
           </div>
           <p className="text-[10px] sm:text-[11px] text-[#9B8A92] mt-1 font-sans">
-            Average daily ROI magnitude (Swing)
+            Average daily portfolio return
           </p>
         </CardContent>
       </Card>
 
       {/* CARD 5: Avg Nifty Daily Swing */}
-      <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card>
+      <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card data-report-block>
         <CardHeader className="kpi-card-header pb-2">
           <CardDescription className="kpi-card-label font-semibold uppercase tracking-wide text-[#9B8A92] flex items-center justify-between gap-1">
             <span className="leading-tight">AVG NIFTY DAILY SWING</span>

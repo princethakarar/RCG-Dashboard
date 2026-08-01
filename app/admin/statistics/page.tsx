@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { useMaxUpsideDownside } from '../../hooks/useMaxUpsideDownside';
 import { useNiftyWeeklyBenchmark } from '../../hooks/useNiftyWeeklyBenchmark';
 import { useNiftyMonthlyBenchmark } from '../../hooks/useNiftyMonthlyBenchmark';
@@ -21,6 +21,9 @@ import {
 } from '../../lib/niftyTargetConfig';
 import { FolderOpen, ArrowRight, ShieldAlert, Loader } from 'lucide-react';
 import Link from 'next/link';
+import { ReportCapture } from '../../components/report/ReportCapture';
+import { DownloadReportButton } from '../../components/report/DownloadReportButton';
+import { toReportFilename } from '../../components/report/reportFilename';
 
 const STATISTICS_SECTIONS = [
   { id: 'section-max-upside', label: 'Upside/Downside' },
@@ -54,6 +57,10 @@ export default function StatisticsPage() {
   const { data: positionData, loading: positionLoading, error: positionError, refetch: positionRefetch } = usePositionData();
   const { data: weeklyBenchmark, empty: weeklyEmpty, loading: weeklyLoading, error: weeklyError } = useNiftyWeeklyBenchmark();
   const { data: monthlyBenchmark, empty: monthlyEmpty, loading: monthlyLoading, error: monthlyError } = useNiftyMonthlyBenchmark();
+
+  const reportRef = useRef<HTMLDivElement>(null);
+  const stillLoading = maxLoading || positionLoading || weeklyLoading || monthlyLoading;
+  const hasAnyData = maxData.length > 0 || positionData.length > 0 || !!weeklyBenchmark || !!monthlyBenchmark;
 
   const weeklyTargetDisplay = `${WEEKLY_TARGET_RETURN.toFixed(WEEKLY_TARGET_DECIMALS)}%`;
   const monthlyTargetDisplay = `${MONTHLY_TARGET_RETURN.toFixed(MONTHLY_TARGET_DECIMALS)}%`;
@@ -143,7 +150,19 @@ export default function StatisticsPage() {
               Advanced risk analysis mapping and performance tracking parameters.
             </p>
           </div>
+          <DownloadReportButton
+            reportRef={reportRef}
+            filename={toReportFilename('Statistics')}
+            disabled={stillLoading || !hasAnyData}
+          />
         </div>
+
+        <ReportCapture
+          ref={reportRef}
+          title="Statistics"
+          subtitle="Advanced risk analysis mapping and performance tracking parameters"
+          className="space-y-6"
+        >
 
         {/* Content Section */}
         {renderContent()}
@@ -164,7 +183,7 @@ export default function StatisticsPage() {
         )}
         {!weeklyLoading && !weeklyError && (weeklyBenchmark || weeklyEmpty) && (
           <div id="section-weekly-target" className="scroll-mt-20 space-y-3">
-            <h3 className="text-[10px] sm:text-[11px] font-bold text-[#9B8A92] uppercase tracking-wider font-sans">
+            <h3 className="text-[10px] sm:text-[11px] font-bold text-[#9B8A92] uppercase tracking-wider font-sans" data-report-block data-report-keep-with-next="true">
               NIFTY WEEKLY TARGET
             </h3>
             {weeklyBenchmark ? (
@@ -201,7 +220,7 @@ export default function StatisticsPage() {
         )}
         {!monthlyLoading && !monthlyError && (monthlyBenchmark || monthlyEmpty) && (
           <div id="section-monthly-target" className="scroll-mt-20 statistics-last-section-pad space-y-3">
-            <h3 className="text-[10px] sm:text-[11px] font-bold text-[#9B8A92] uppercase tracking-wider font-sans">
+            <h3 className="text-[10px] sm:text-[11px] font-bold text-[#9B8A92] uppercase tracking-wider font-sans" data-report-block data-report-keep-with-next="true">
               NIFTY MONTHLY TARGET
             </h3>
             {monthlyBenchmark ? (
@@ -221,6 +240,8 @@ export default function StatisticsPage() {
             )}
           </div>
         )}
+
+        </ReportCapture>
 
       </main>
 

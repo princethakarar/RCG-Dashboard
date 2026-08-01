@@ -435,3 +435,11 @@ DROP POLICY IF EXISTS client_data_self ON client_data;
 CREATE POLICY client_data_self ON client_data
   USING (client_id IN (SELECT id FROM clients WHERE user_id = current_user_id()))
   WITH CHECK (client_id IN (SELECT id FROM clients WHERE user_id = current_user_id()));
+
+-- =============================================================================
+-- Account usernames (explicit register flow replaces create-on-first-login)
+-- =============================================================================
+-- Nullable on purpose: accounts created under the old auto-create-on-login flow
+-- have no username. The app falls back to the email prefix for those, so they
+-- keep working untouched. Every account created via /register sets it.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT;

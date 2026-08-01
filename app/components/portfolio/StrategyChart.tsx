@@ -98,7 +98,7 @@ export const StrategyChart: React.FC<StrategyChartProps> = ({ data, strategyName
   };
 
   return (
-    <Card className="border border-[#EDE0E6] shadow-none rounded-2xl overflow-hidden select-none">
+    <Card className="border border-[#EDE0E6] shadow-none rounded-2xl overflow-hidden select-none" data-report-block>
       <CardHeader className="card-responsive-header">
         <CardTitle className="text-sm sm:text-[15px] font-semibold text-[#1A0A10] tracking-tight">
           Net Performance — {displayName || strategyName}

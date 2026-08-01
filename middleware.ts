@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyJWT, COOKIE_NAME, getUserPasswordVersion } from './app/lib/auth-edge';
+import { isPageVisibleToUser, getLandingPath, DEFAULT_LANDING_PATH } from './app/lib/pageAccessConfig';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -16,8 +17,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/max-upside-downside');
 
   if (!isProtectedPath) {
-    // If user is already logged in with a valid session and tries to access /login, redirect to dashboard
-    if (pathname === '/login') {
+    // If user is already logged in with a valid session and tries to access /login or /register, redirect to dashboard
+    if (pathname === '/login' || pathname === '/register') {
       const token = request.cookies.get(COOKIE_NAME)?.value;
       if (token) {
         const payload = await verifyJWT(token);
@@ -25,7 +26,7 @@ export async function middleware(request: NextRequest) {
           try {
             const currentVersion = await getUserPasswordVersion(payload.userId, payload.email);
             if (payload.passwordVersion === currentVersion) {
-              return NextResponse.redirect(new URL('/intern-portfolio', request.url));
+              return NextResponse.redirect(new URL(getLandingPath(payload.email), request.url));
             }
           } catch (err) {
             // Ignore error, proceed to login page
@@ -73,6 +74,12 @@ export async function middleware(request: NextRequest) {
     console.error('[middleware] Failed site settings check during auth:', err);
     // If the database check fails completely, let request pass to prevent absolute blocking (or reject for safety).
     // For maximum safety, we allow it if we have verified the JWT signature, but log the error.
+  }
+
+  // Per-page access control (see pageAccessConfig). Keeps a restricted
+  // dashboard unreachable by URL, not just hidden from the nav.
+  if (pathname.startsWith('/intern-portfolio') && !isPageVisibleToUser('/intern-portfolio', payload.email)) {
+    return NextResponse.redirect(new URL(DEFAULT_LANDING_PATH, request.url));
   }
 
   return NextResponse.next();

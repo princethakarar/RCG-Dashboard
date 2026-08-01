@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useRef } from 'react';
 import Image from 'next/image';
 import { useStrategyData } from '../hooks/useStrategyData';
 import { TopNav } from '../components/layout/TopNav';
@@ -14,6 +14,9 @@ import Link from 'next/link';
 import { useCurrentUserEmail } from '../hooks/useCurrentUserEmail';
 import { getStrategyDisplayName } from '../lib/strategyDisplayConfig';
 import { isStrategyVisibleToUser } from '../lib/strategyAccessConfig';
+import { ReportCapture } from '../components/report/ReportCapture';
+import { DownloadReportButton } from '../components/report/DownloadReportButton';
+import { toReportFilename } from '../components/report/reportFilename';
 
 const ALL_STRATEGIES = ['3 Red Candle', 'Soldier Pattern', 'Hybrid Adaptive Options Framework'];
 
@@ -21,6 +24,7 @@ function StrategySection({ strategyName, userEmail }: { strategyName: string; us
   const { dailyData: data, summaryStats: metrics, loading, error, refetch } = useStrategyData(strategyName);
   const sectionId = `strategy-${strategyName.replace(/\s+/g, '-')}`;
   const displayName = getStrategyDisplayName(strategyName, userEmail);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   if (loading) {
     return (
@@ -100,11 +104,23 @@ function StrategySection({ strategyName, userEmail }: { strategyName: string; us
             {metrics.period as string} · Lot Size: {metrics.lot_size as string} · {metrics.total_trades as number} Total Trades
           </p>
         </div>
+        <DownloadReportButton
+          reportRef={reportRef}
+          filename={toReportFilename(`Strategies ${displayName}`)}
+          disabled={loading || data.length === 0}
+        />
       </div>
 
       {/* Main Content Area */}
       <main className="dashboard-container py-4 md:py-6 w-full space-y-4 md:space-y-6">
         
+        <ReportCapture
+          ref={reportRef}
+          title={`Algorithmic Strategy ${displayName}`}
+          subtitle={`${metrics.period as string} · Lot Size: ${metrics.lot_size as string} · ${metrics.total_trades as number} Total Trades`}
+          className="space-y-4 md:space-y-6"
+        >
+
         {/* 1. Stats Grid */}
         <div className="kpi-row" data-kpi-row>
           <StrategyStatsGrid 
@@ -128,6 +144,8 @@ function StrategySection({ strategyName, userEmail }: { strategyName: string; us
           <StrategyChart data={data} strategyName={strategyName} displayName={displayName} />
         </div>
 
+        </ReportCapture>
+
         {/* Print-only Report Footer */}
         <div data-print-footer className="hidden print:block">
           <div className="flex justify-between items-center">
@@ -149,6 +167,7 @@ function HybridStrategySection({ strategyName, userEmail }: { strategyName: stri
   const { dailyData: data, summaryStats: metrics, loading, error, refetch } = useStrategyData(strategyName);
   const sectionId = `strategy-${strategyName.replace(/\s+/g, '-')}`;
   const displayName = getStrategyDisplayName(strategyName, userEmail);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   if (loading) {
     return (
@@ -227,10 +246,22 @@ function HybridStrategySection({ strategyName, userEmail }: { strategyName: stri
             {Number(metrics.total_days) || 0} Total Trading Days
           </p>
         </div>
+        <DownloadReportButton
+          reportRef={reportRef}
+          filename={toReportFilename(`Strategies ${displayName}`)}
+          disabled={loading || data.length === 0}
+        />
       </div>
 
       {/* Main Content Area */}
       <main className="dashboard-container py-4 md:py-6 w-full space-y-4 md:space-y-6">
+
+        <ReportCapture
+          ref={reportRef}
+          title={`Algorithmic Strategy ${displayName}`}
+          subtitle={`${Number(metrics.total_days) || 0} Total Trading Days`}
+          className="space-y-4 md:space-y-6"
+        >
 
         {/* 1. Stats Grid */}
         <div className="kpi-row" data-kpi-row>
@@ -257,6 +288,8 @@ function HybridStrategySection({ strategyName, userEmail }: { strategyName: stri
         <div data-chart-card data-chart-full>
           <HybridStrategyChart data={data} strategyName={strategyName} displayName={displayName} />
         </div>
+
+        </ReportCapture>
 
         {/* Print-only Report Footer */}
         <div data-print-footer className="hidden print:block">

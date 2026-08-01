@@ -112,7 +112,7 @@ export const MaxUpsideDownsideChart: React.FC<MaxUpsideDownsideChartProps> = ({ 
   };
 
   return (
-    <Card className="border border-[#EDE0E6] shadow-none rounded-2xl select-none">
+    <Card className="border border-[#EDE0E6] shadow-none rounded-2xl select-none" data-report-block>
       <CardHeader className="card-responsive-header pb-2">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>

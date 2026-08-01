@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useRef } from 'react';
 import Image from 'next/image';
 import { usePortfolio } from '../hooks/usePortfolioData';
 import { TopNav } from '../components/layout/TopNav';
@@ -23,9 +23,15 @@ import { PositionCrDrMarginChart } from '../components/portfolio/PositionCrDrMar
 import { FolderOpen, ArrowRight, ShieldAlert, Loader } from 'lucide-react';
 import Link from 'next/link';
 import { formatDate } from '../lib/formatters';
+import { ReportCapture } from '../components/report/ReportCapture';
+import { DownloadReportButton } from '../components/report/DownloadReportButton';
+import { toReportFilename } from '../components/report/reportFilename';
+import { useCurrentUsername } from '../hooks/useCurrentUsername';
 
 export default function NetAssetPortfolioPage() {
   const { netAssetData: data, tradingData, netAssetNavSeries: navSeries, netAssetMetrics: metrics, loading, error, refetch } = usePortfolio();
+  const username = useCurrentUsername();
+  const reportRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -84,17 +90,32 @@ export default function NetAssetPortfolioPage() {
               </div>
             </div>
             <div className="text-[7pt] text-[#9B8A92] text-right">
-              <div>Rising Alpha Creator Portfolio · Net Asset · (Client: Mr. Yash Sharma)</div>
+              <div>Rising Alpha Creator Portfolio · Net Asset · (Client: {username ?? 'Client'})</div>
               <div>{formatDate(metrics.dateRange.from)} – {formatDate(metrics.dateRange.to)} · {metrics.totalDays} Trading Days</div>
               <div>Generated: {new Date().toLocaleString('en-IN')}</div>
             </div>
           </div>
 
           {/* Dynamic Page Header (visible on screen) */}
-          <PageHeader />
+          <PageHeader
+            actions={
+              <DownloadReportButton
+                reportRef={reportRef}
+                filename={toReportFilename('Net Asset')}
+                disabled={loading || data.length === 0}
+              />
+            }
+          />
 
           {/* Main Content Area */}
           <main className="flex-1 dashboard-container py-4 md:py-6 w-full space-y-4 md:space-y-6 dashboard-with-sticky-nav">
+            <ReportCapture
+              ref={reportRef}
+              title="Rising Alpha Creator Portfolio Net Asset"
+              subtitle={`NIFTY vs RCG Alpha Creator Net Asset · NSE F&O Options · ${metrics.totalDays} Trading Days`}
+              period={`${formatDate(metrics.dateRange.from)} – ${formatDate(metrics.dateRange.to)}`}
+              className="space-y-4 md:space-y-6"
+            >
             
             {/* 1. KPI Cards Row */}
             <div id="section-kpi" className="kpi-row scroll-mt-20" data-kpi-row>
@@ -135,14 +156,14 @@ export default function NetAssetPortfolioPage() {
 
             {/* 4. Stat Cards Row */}
             <div id="section-stats" className="scroll-mt-20 space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4 md:gap-6" data-stat-row>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4 md:gap-6" data-stat-row data-report-grid="2">
                 <HighestNAVCard metrics={metrics} />
                 <AvgDaysToNewHighCard metrics={metrics} />
                 <AnnualizedForecastCard metrics={metrics} isNetAsset={true} />
               </div>
 
               <div className="space-y-3">
-                <h3 className="text-[10px] sm:text-[11px] font-bold text-[#9B8A92] uppercase tracking-wider font-sans">
+                <h3 className="text-[10px] sm:text-[11px] font-bold text-[#9B8A92] uppercase tracking-wider font-sans" data-report-block data-report-keep-with-next="true">
                   PERIODIC RETURNS
                 </h3>
                 <PeriodicReturnsCards data={data} />
@@ -171,6 +192,7 @@ export default function NetAssetPortfolioPage() {
               </div>
             </div>
 
+            </ReportCapture>
           </main>
 
           <StickySectionNav />

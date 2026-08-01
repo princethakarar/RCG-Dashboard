@@ -60,7 +60,7 @@ export const DailyReturnChart: React.FC<DailyReturnChartProps> = ({ data }) => {
   };
 
   return (
-    <Card className="border border-[#EDE0E6] shadow-none rounded-2xl select-none">
+    <Card className="border border-[#EDE0E6] shadow-none rounded-2xl select-none" data-report-block>
       <CardHeader className="card-responsive-header">
         <div className="flex items-start justify-between">
           <div>

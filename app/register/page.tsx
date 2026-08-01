@@ -3,11 +3,13 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Eye, EyeOff, Lock, Mail, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, User, Loader2 } from 'lucide-react';
 
-export default function LoginPage() {
+export default function RegisterPage() {
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,23 +19,41 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
+    if (username.trim().length < 2) {
+      setError('Please enter your name (at least 2 characters).');
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      setLoading(false);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username: username.trim(), email, password }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Invalid credentials');
+        throw new Error(data.error || 'Failed to create your account');
       }
 
-      // Successful login, force hard redirect to ensure cookies propagate and client cache is cleared
+      // Account created and signed in, force hard redirect to ensure cookies propagate
       window.location.href = '/intern-portfolio';
     } catch (err: unknown) {
-      setError((err as Error).message || 'Authentication failed. Please try again.');
+      setError((err as Error).message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -41,12 +61,12 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-[#FFFFFF] p-4 relative font-sans">
-      
+
       {/* Centered Single White Card */}
       <div className="w-full max-w-[420px] bg-white border border-[#EDE0E6] rounded-xl shadow-[0_4px_20px_rgba(139,10,61,0.04)] overflow-hidden transition-all duration-300">
-        
+
         <div className="p-8 sm:p-10 flex flex-col items-center">
-          
+
           {/* Logo Lockup */}
           <div className="mb-8 flex items-center justify-center">
             <Image
@@ -62,12 +82,11 @@ export default function LoginPage() {
           {/* Heading */}
           <div className="text-center mb-6">
             <h1 className="text-xl font-bold tracking-tight text-[#1A0A10]">
-              Welcome Back
+              Create Your Account
             </h1>
             <p className="text-xs text-[#9B8A92] mt-1.5">
-              Login to access our dashboard.
+              Register to access our dashboard.
             </p>
-
           </div>
 
           {/* Inline Error Message (Badge/Pill style) */}
@@ -81,11 +100,36 @@ export default function LoginPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="w-full space-y-4">
-            
+
+            {/* Username Field */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="username"
+                className="block text-[11px] font-bold text-[#6B4A58] uppercase tracking-[0.05em]"
+              >
+                Username
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-4 w-4 text-[#9B8A92]" />
+                </div>
+                <input
+                  id="username"
+                  type="text"
+                  required
+                  maxLength={50}
+                  placeholder="Your display name"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 bg-white border border-[#EDE0E6] rounded-md text-sm text-[#1A0A10] placeholder-[#9B8A92] focus:outline-none focus:ring-2 focus:ring-[#C41E5A]/20 focus:border-[#C41E5A] transition-all duration-200"
+                />
+              </div>
+            </div>
+
             {/* Email Field */}
             <div className="space-y-1.5">
-              <label 
-                htmlFor="email" 
+              <label
+                htmlFor="email"
                 className="block text-[11px] font-bold text-[#6B4A58] uppercase tracking-[0.05em]"
               >
                 Email
@@ -108,8 +152,8 @@ export default function LoginPage() {
 
             {/* Password Field */}
             <div className="space-y-1.5">
-              <label 
-                htmlFor="password" 
+              <label
+                htmlFor="password"
                 className="block text-[11px] font-bold text-[#6B4A58] uppercase tracking-[0.05em]"
               >
                 Password
@@ -122,7 +166,7 @@ export default function LoginPage() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   required
-                  placeholder="••••••••••••"
+                  placeholder="At least 6 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-9 pr-10 py-2 bg-white border border-[#EDE0E6] rounded-md text-sm text-[#1A0A10] placeholder-[#9B8A92] focus:outline-none focus:ring-2 focus:ring-[#C41E5A]/20 focus:border-[#C41E5A] transition-all duration-200"
@@ -142,6 +186,30 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {/* Confirm Password Field */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="confirm-password"
+                className="block text-[11px] font-bold text-[#6B4A58] uppercase tracking-[0.05em]"
+              >
+                Confirm Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-4 w-4 text-[#9B8A92]" />
+                </div>
+                <input
+                  id="confirm-password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  placeholder="Re-enter password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full pl-9 pr-10 py-2 bg-white border border-[#EDE0E6] rounded-md text-sm text-[#1A0A10] placeholder-[#9B8A92] focus:outline-none focus:ring-2 focus:ring-[#C41E5A]/20 focus:border-[#C41E5A] transition-all duration-200"
+                />
+              </div>
+            </div>
+
             {/* Submit Button */}
             <button
               type="submit"
@@ -151,20 +219,20 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
-                  Authenticating...
+                  Creating Account...
                 </>
               ) : (
-                'Login'
+                'Create Account'
               )}
             </button>
 
           </form>
 
-          {/* Register Link */}
+          {/* Login Link */}
           <p className="mt-6 text-xs text-[#9B8A92]">
-            Don&apos;t have an account?{' '}
-            <Link href="/register" className="font-semibold text-[#8B0A3D] hover:text-[#C41E5A] transition-colors">
-              Register
+            Already have an account?{' '}
+            <Link href="/login" className="font-semibold text-[#8B0A3D] hover:text-[#C41E5A] transition-colors">
+              Log in
             </Link>
           </p>
 

@@ -91,7 +91,7 @@ export const RunningROIChart: React.FC<RunningROIChartProps> = ({ data }) => {
   };
 
   return (
-    <Card className="border border-[#EDE0E6] shadow-none rounded-2xl overflow-hidden select-none">
+    <Card className="border border-[#EDE0E6] shadow-none rounded-2xl overflow-hidden select-none" data-report-block>
       <CardHeader className="card-responsive-header">
         <div className="flex items-start justify-between">
           <div>

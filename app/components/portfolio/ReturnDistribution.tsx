@@ -45,7 +45,9 @@ export const ReturnDistribution: React.FC<ReturnDistributionProps> = ({ metrics 
 
   return (
     <Card className="border border-[#EDE0E6] shadow-none rounded-2xl select-none">
-      <CardHeader className="card-responsive-header">
+      {/* Title travels with the chart block below rather than being its own
+          orphaned fragment at the bottom of a page. */}
+      <CardHeader className="card-responsive-header" data-report-block data-report-keep-with-next="true">
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="text-sm sm:text-[15px] font-semibold text-[#1A0A10] tracking-tight">
@@ -61,7 +63,7 @@ export const ReturnDistribution: React.FC<ReturnDistributionProps> = ({ metrics 
       <CardContent className="card-responsive-body">
         <div className="distribution-grid">
           
-          <div className="chart-scroll-wrapper">
+          <div className="chart-scroll-wrapper" data-report-block>
             <div className="chart-scroll-inner distribution-chart">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -117,7 +119,11 @@ export const ReturnDistribution: React.FC<ReturnDistributionProps> = ({ metrics 
             </div>
           </div>
 
-          <div className="distribution-table-wrapper border border-[#EDE0E6] rounded-xl overflow-hidden bg-white shadow-none w-full overflow-x-auto">
+          <div
+            className="distribution-table-wrapper border border-[#EDE0E6] rounded-xl overflow-hidden bg-white shadow-none w-full overflow-x-auto"
+            data-report-block
+            data-report-table="true"
+          >
             <div className="bg-[#F8F4F6] border-b border-[#EDE0E6] px-4 py-3">
               <span className="text-[10px] sm:text-[11px] font-bold text-[#1A0A10] uppercase tracking-wider font-sans">
                 Return Classification

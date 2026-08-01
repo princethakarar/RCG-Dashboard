@@ -39,10 +39,10 @@ export const StrategyStatsGrid: React.FC<StrategyStatsGridProps> = ({ summarySta
   const totalDays = totals.totalDays as number | undefined;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 select-none">
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 select-none" data-report-grid="2">
 
       {/* Total Net P&L */}
-      <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300 col-span-2 xl:col-span-1">
+      <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300 col-span-2 xl:col-span-1" data-report-block>
         <div className="flex items-start justify-between mb-3">
           <div className="p-2 bg-[#F8F4F6] rounded-lg">
             <Activity size={18} className="text-[#8B0A3D]" />
@@ -61,7 +61,7 @@ export const StrategyStatsGrid: React.FC<StrategyStatsGridProps> = ({ summarySta
       {hasPerLegPnl && (
         <>
           {/* Directional Net P&L */}
-          <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300">
+          <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300" data-report-block>
             <div className="flex items-start justify-between mb-3">
               <div className="p-2 bg-[#EFF6FF] rounded-lg">
                 <TrendingUp size={18} className="text-[#2563EB]" />
@@ -78,7 +78,7 @@ export const StrategyStatsGrid: React.FC<StrategyStatsGridProps> = ({ summarySta
           </div>
 
           {/* Non-Directional Net P&L */}
-          <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300">
+          <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300" data-report-block>
             <div className="flex items-start justify-between mb-3">
               <div className="p-2 bg-[#F0FDFA] rounded-lg">
                 <TrendingUp size={18} className="text-[#0D9488]" />
@@ -97,7 +97,7 @@ export const StrategyStatsGrid: React.FC<StrategyStatsGridProps> = ({ summarySta
       )}
 
       {/* Win Rate */}
-      <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300">
+      <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300" data-report-block>
         <div className="flex items-start justify-between mb-3">
           <div className="p-2 bg-[#F8F4F6] rounded-lg">
             <Target size={18} className="text-[#8B0A3D]" />
@@ -115,7 +115,7 @@ export const StrategyStatsGrid: React.FC<StrategyStatsGridProps> = ({ summarySta
       </div>
 
       {/* Avg Daily P&L */}
-      <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300">
+      <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300" data-report-block>
         <div className="flex items-start justify-between mb-3">
           <div className="p-2 bg-[#F8F4F6] rounded-lg">
             <BarChart2 size={18} className="text-[#8B0A3D]" />
@@ -132,7 +132,7 @@ export const StrategyStatsGrid: React.FC<StrategyStatsGridProps> = ({ summarySta
       </div>
 
       {/* Best Day */}
-      <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300">
+      <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300" data-report-block>
         <div className="flex items-start justify-between mb-3">
           <div className="p-2 bg-[#F0FDF4] rounded-lg">
             <TrendingUp size={18} className="text-[#16A34A]" />
@@ -147,7 +147,7 @@ export const StrategyStatsGrid: React.FC<StrategyStatsGridProps> = ({ summarySta
       </div>
 
       {/* Worst Day */}
-      <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300">
+      <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300" data-report-block>
         <div className="flex items-start justify-between mb-3">
           <div className="p-2 bg-[#FEF2F2] rounded-lg">
             <TrendingDown size={18} className="text-[#DC2626]" />
@@ -162,7 +162,7 @@ export const StrategyStatsGrid: React.FC<StrategyStatsGridProps> = ({ summarySta
       </div>
 
       {/* Total Trades / Total Trading Days */}
-      <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300">
+      <div className="premium-card-clean hover:translate-y-[-2px] transition-transform duration-300" data-report-block>
         <div className="flex items-start justify-between mb-3">
           <div className="p-2 bg-[#F8F4F6] rounded-lg">
             <Activity size={18} className="text-[#8B0A3D]" />

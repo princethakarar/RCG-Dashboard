@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserByEmail, createUser, verifyPassword, signJWT, COOKIE_NAME } from '../../../lib/auth';
+import { getUserByEmail, verifyPassword, signJWT, COOKIE_NAME } from '../../../lib/auth';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -17,32 +17,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Please enter a valid email address' }, { status: 400 });
     }
 
+    // Accounts are only ever created through /api/auth/register.
     const existingUser = await getUserByEmail(email);
+    if (!existingUser) {
+      return NextResponse.json({ error: 'No account found with this email. Please register first.' }, { status: 404 });
+    }
 
-    let userId: string;
-    let passwordVersion: number;
-
-    if (existingUser) {
-      // Returning user: verify against their own password.
-      const isValid = verifyPassword(password, existingUser.password_hash);
-      if (!isValid) {
-        return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
-      }
-      userId = existingUser.id;
-      passwordVersion = existingUser.password_version;
-    } else {
-      // First-time login for this email: create the account with the
-      // password they just entered.
-      if (password.length < 6) {
-        return NextResponse.json({ error: 'New account password must be at least 6 characters long' }, { status: 400 });
-      }
-      const newUser = await createUser(email, password);
-      userId = newUser.id;
-      passwordVersion = newUser.password_version;
+    const isValid = verifyPassword(password, existingUser.password_hash);
+    if (!isValid) {
+      return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
     }
 
     // Sign the JWT with userId
-    const token = await signJWT(email, passwordVersion, userId);
+    const token = await signJWT(existingUser.email, existingUser.password_version, existingUser.id);
 
     // Set cookie
     const response = NextResponse.json({ success: true, message: 'Logged in successfully' });

@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Loader2, Download } from 'lucide-react';
-import Image from 'next/image';
+import { Loader2 } from 'lucide-react';
 import { TopNav } from '../../../components/layout/TopNav';
 import { Footer } from '../../../components/layout/Footer';
 import { Button } from '../../../components/ui/button';
@@ -17,6 +16,9 @@ import { DailyReturnChart } from '../../../components/portfolio/DailyReturnChart
 import { NetMTMChart } from '../../../components/portfolio/NetMTMChart';
 import { ReturnDistribution } from '../../../components/portfolio/ReturnDistribution';
 import { PeriodicReturnsCards } from '../../../components/portfolio/PeriodicReturnsCards';
+import { ReportCapture } from '../../../components/report/ReportCapture';
+import { DownloadReportButton } from '../../../components/report/DownloadReportButton';
+import { toReportFilename } from '../../../components/report/reportFilename';
 
 
 
@@ -32,7 +34,6 @@ export default function ClientDashboardPage() {
   const [portfolioRows, setPortfolioRows] = useState<PortfolioRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [generatingPDF, setGeneratingPDF] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -77,55 +78,6 @@ export default function ClientDashboardPage() {
     }
     fetchData();
   }, [clientId]);
-
-  const downloadPDF = async () => {
-    if (!reportRef.current) return;
-    setGeneratingPDF(true);
-
-    const el = reportRef.current;
-    const A4_MARGIN_MM = 10;
-    const A4_CONTENT_WIDTH_PX = Math.round((210 - A4_MARGIN_MM * 2) * (96 / 25.4)); // ≈ 718px
-
-    // We add a temporary class to the container to style it specifically for PDF
-    el.classList.add('pdf-mode');
-
-    // html2pdf clones this element into its own offscreen container, sized to
-    // the PDF page's usable content width (A4 minus margins) — NOT the
-    // element's current on-screen width. Recharts' ResponsiveContainer bakes
-    // its measured pixel width into inline styles (legend, axes, SVG), so if
-    // we let it stay sized for the live 1400px-wide page, those fixed pixel
-    // values get cloned as-is into the much narrower PDF container and
-    // overflow/clip. Forcing this element to the PDF's exact content width
-    // first lets Recharts re-measure and redraw correctly before capture.
-    const originalWidth = el.style.width;
-    const originalMaxWidth = el.style.maxWidth;
-    el.style.width = `${A4_CONTENT_WIDTH_PX}px`;
-    el.style.maxWidth = `${A4_CONTENT_WIDTH_PX}px`;
-
-    // Let ResizeObserver-driven re-renders (Recharts) settle at the new width.
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const opt = {
-      margin: A4_MARGIN_MM,
-      filename: `${String(client?.name || 'Client').replace(/\s+/g, '_')}_Report.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
-    };
-
-    try {
-      const html2pdf = (await import('html2pdf.js')).default;
-      await html2pdf().from(el).set(opt).save();
-    } catch (e) {
-      console.error('PDF generation failed:', e);
-      alert('Failed to generate PDF. Please try again.');
-    } finally {
-      el.classList.remove('pdf-mode');
-      el.style.width = originalWidth;
-      el.style.maxWidth = originalMaxWidth;
-      setGeneratingPDF(false);
-    }
-  };
 
 
 
@@ -175,33 +127,21 @@ export default function ClientDashboardPage() {
                 </p>
               </div>
             </div>
-            <Button
-              onClick={downloadPDF}
-              disabled={generatingPDF || dataRows.length === 0}
-              className="shrink-0 self-start sm:self-auto"
-            >
-              {generatingPDF ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
-              {generatingPDF ? 'Generating...' : 'Download Report'}
-            </Button>
+            <DownloadReportButton
+              reportRef={reportRef}
+              filename={toReportFilename(String(client.name || 'Client'))}
+              disabled={dataRows.length === 0}
+            />
           </CardContent>
         </Card>
 
         {/* The container that will be exported to PDF */}
-        <div ref={reportRef} className="pdf-container space-y-6">
-
-          {/* Branding header — shown only in the exported PDF report */}
-          <div className="hidden pdf-branding bg-white p-8 rounded-2xl border-2 border-[#8B0A3D]/15 mb-6 flex-col items-center justify-center text-center">
-             <Image src="/logo.png" alt="Rising Capital Group" width={160} height={64} className="h-14 w-auto mb-4 mx-auto" />
-             <h2 className="text-2xl font-extrabold text-[#1A0A10] tracking-tight">{String(client.name)}</h2>
-             <p className="text-[#6B4A58] text-sm mt-1 font-medium">
-               {maskMobile(String(client.mobile))} &middot; {maskEmail(String(client.email))}
-             </p>
-             <div className="flex items-center justify-center gap-3 mt-4 pt-4 border-t border-[#EDE0E6] w-full text-[11px] text-[#9B8A92] font-semibold uppercase tracking-wide">
-               <span>Report Period: {formatDate(metrics.dateRange.from)} &ndash; {formatDate(metrics.dateRange.to)}</span>
-               <span>&middot;</span>
-               <span>Generated: {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-             </div>
-          </div>
+        <ReportCapture
+          ref={reportRef}
+          title={String(client.name)}
+          subtitle={`${maskMobile(String(client.mobile))} · ${maskEmail(String(client.email))}`}
+          period={`${formatDate(metrics.dateRange.from)} – ${formatDate(metrics.dateRange.to)}`}
+        >
 
           {dataRows.length > 0 ? (
             <>
@@ -220,28 +160,13 @@ export default function ClientDashboardPage() {
               <ReturnDistribution metrics={metrics as unknown as PortfolioMetrics} />
             </>
           ) : (
-            <div className="bg-white rounded-2xl border border-[#EDE0E6] p-12 text-center shadow-sm">
+            <div className="bg-white rounded-2xl border border-[#EDE0E6] p-12 text-center shadow-sm" data-report-block>
               <h3 className="text-lg font-bold text-[#1A0A10]">No trading data</h3>
               <p className="text-[#6B4A58] mt-1">This client does not have any data rows.</p>
             </div>
           )}
 
-          {/* PDF Footer branding */}
-          <div className="hidden pdf-branding-footer mt-12 pt-8 border-t border-[#EDE0E6] text-center">
-             <p className="text-[#8B0A3D] font-extrabold text-sm uppercase tracking-widest mb-2">Rising Capital Group</p>
-             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9B8A92] mb-3">NSE F&amp;O Partner &middot; NIFTY Options Desk</p>
-             <p className="text-[10px] text-[#6B4A58] italic max-w-2xl mx-auto mb-4">
-               &quot;Don&apos;t follow us&mdash;follow the process. Don&apos;t believe opinions&mdash;believe the data. Anyone can trade, but only a few have the discipline to follow the process.&quot;
-             </p>
-             <div className="text-[10px] text-[#9B8A92] leading-relaxed">
-               <p>Unit no :- P03-02A&amp;B, 3rd Floor, Tower A, WTC Gift City, Block No 51, Road 5E, Zone-5 Gift City, Gandhinagar, Gujarat</p>
-               <p>Phone: +91 9316597989 &middot; Email: info@risingcapitalgroup.in</p>
-             </div>
-             <p className="text-[9px] text-[#C4B8BE] mt-4">
-               This is a system-generated report for internal review purposes only. Past performance does not guarantee future results.
-             </p>
-          </div>
-        </div>
+        </ReportCapture>
 
       </main>
 

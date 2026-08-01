@@ -99,7 +99,7 @@ export const NetMTMChart: React.FC<NetMTMChartProps> = ({ data, metrics }) => {
   };
 
   return (
-    <Card className="border border-[#EDE0E6] shadow-none rounded-2xl select-none">
+    <Card className="border border-[#EDE0E6] shadow-none rounded-2xl select-none" data-report-block>
       <CardHeader className="card-responsive-header">
         <div className="flex flex-col gap-3">
           <div>

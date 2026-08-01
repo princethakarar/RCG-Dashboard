@@ -39,7 +39,7 @@ export const ClientKPICards: React.FC<ClientKPICardsProps> = ({ metrics }) => {
     <div className="kpi-cards-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 xl:gap-6 select-none">
       
       {/* CARD 1: Running ROI on Net Margin */}
-      <Card className="relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow border-[#EDE0E6] bg-white">
+      <Card className="relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow border-[#EDE0E6] bg-white" data-report-block>
         <CardHeader className="pb-2">
           <CardDescription className="text-xs font-bold uppercase tracking-wider text-[#9B8A92] flex items-center justify-between">
             <span>RUNNING ROI ON NET MARGIN</span>
@@ -61,7 +61,7 @@ export const ClientKPICards: React.FC<ClientKPICardsProps> = ({ metrics }) => {
       </Card>
 
       {/* CARD 2: Win Ratio */}
-      <Card className="relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow border-[#EDE0E6] bg-white">
+      <Card className="relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow border-[#EDE0E6] bg-white" data-report-block>
         <CardHeader className="pb-2">
           <CardDescription className="text-xs font-bold uppercase tracking-wider text-[#9B8A92] flex items-center justify-between">
             <span>WIN RATIO</span>
@@ -101,7 +101,7 @@ export const ClientKPICards: React.FC<ClientKPICardsProps> = ({ metrics }) => {
       </Card>
 
       {/* CARD 3: Working Days */}
-      <Card className="relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow border-[#EDE0E6] bg-white">
+      <Card className="relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow border-[#EDE0E6] bg-white" data-report-block>
         <CardHeader className="pb-2">
           <CardDescription className="text-xs font-bold uppercase tracking-wider text-[#9B8A92] flex items-center justify-between">
             <span>WORKING DAYS</span>
@@ -119,7 +119,7 @@ export const ClientKPICards: React.FC<ClientKPICardsProps> = ({ metrics }) => {
       </Card>
 
       {/* CARD 4: Annualized Forecast */}
-      <Card className="relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow border-[#EDE0E6] bg-white">
+      <Card className="relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow border-[#EDE0E6] bg-white" data-report-block>
         <CardHeader className="pb-2">
           <CardDescription className="text-xs font-bold uppercase tracking-wider text-[#9B8A92] flex items-center justify-between">
             <span>5-YEAR FORECAST</span>
@@ -139,7 +139,7 @@ export const ClientKPICards: React.FC<ClientKPICardsProps> = ({ metrics }) => {
 
 
       {/* CARD 7: Avg Portfolio Swing */}
-      <Card className="relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow border-[#EDE0E6] bg-white">
+      <Card className="relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow border-[#EDE0E6] bg-white" data-report-block>
         <CardHeader className="pb-2">
           <CardDescription className="text-xs font-bold uppercase tracking-wider text-[#9B8A92] flex items-center justify-between">
             <span>AVG PORTFOLIO SWING</span>
@@ -157,7 +157,7 @@ export const ClientKPICards: React.FC<ClientKPICardsProps> = ({ metrics }) => {
       </Card>
 
       {/* CARD 8: Avg Nifty Daily Swing */}
-      <Card className="relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow border-[#EDE0E6] bg-white">
+      <Card className="relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow border-[#EDE0E6] bg-white" data-report-block>
         <CardHeader className="pb-2">
           <CardDescription className="text-xs font-bold uppercase tracking-wider text-[#9B8A92] flex items-center justify-between">
             <span>AVG NIFTY SWING</span>

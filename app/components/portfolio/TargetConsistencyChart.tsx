@@ -113,8 +113,8 @@ export const TargetConsistencyChart: React.FC<TargetConsistencyChartProps> = ({
   return (
     <div className="space-y-4">
       {/* Summary Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" data-report-grid="2">
+        <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card data-report-block>
           <CardHeader className="kpi-card-header pb-2">
             <CardDescription className="kpi-card-label font-semibold uppercase tracking-wide text-[#9B8A92] flex items-center justify-between gap-1">
               <span className="leading-tight">{cap(periodNounPlural)} Achieved ({windowLabel})</span>
@@ -131,7 +131,7 @@ export const TargetConsistencyChart: React.FC<TargetConsistencyChartProps> = ({
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card>
+        <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card data-report-block>
           <CardHeader className="kpi-card-header pb-2">
             <CardDescription className="kpi-card-label font-semibold uppercase tracking-wide text-[#9B8A92] flex items-center justify-between gap-1">
               <span className="leading-tight">{cap(periodAdjective)} Target</span>
@@ -148,7 +148,7 @@ export const TargetConsistencyChart: React.FC<TargetConsistencyChartProps> = ({
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card>
+        <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card data-report-block>
           <CardHeader className="kpi-card-header pb-2">
             <CardDescription className="kpi-card-label font-semibold uppercase tracking-wide text-[#9B8A92] flex items-center justify-between gap-1">
               <span className="leading-tight">Avg {cap(periodNoun)} Above Target</span>
@@ -167,7 +167,7 @@ export const TargetConsistencyChart: React.FC<TargetConsistencyChartProps> = ({
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card>
+        <Card className="relative overflow-hidden kpi-card-responsive" data-kpi-card data-report-block>
           <CardHeader className="kpi-card-header pb-2">
             <CardDescription className="kpi-card-label font-semibold uppercase tracking-wide text-[#9B8A92] flex items-center justify-between gap-1">
               <span className="leading-tight">Avg {cap(periodNoun)} Below Target</span>
@@ -188,7 +188,7 @@ export const TargetConsistencyChart: React.FC<TargetConsistencyChartProps> = ({
       </div>
 
       {/* Chart Card */}
-      <Card className="border border-[#EDE0E6] shadow-none rounded-2xl select-none">
+      <Card className="border border-[#EDE0E6] shadow-none rounded-2xl select-none" data-report-block>
         <CardHeader className="card-responsive-header">
           <div>
             <CardTitle className="text-sm sm:text-[15px] font-semibold text-[#1A0A10] tracking-tight">

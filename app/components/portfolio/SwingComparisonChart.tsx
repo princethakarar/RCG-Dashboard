@@ -67,7 +67,7 @@ export const SwingComparisonChart: React.FC<SwingComparisonChartProps> = ({ data
   };
 
   return (
-    <Card className="border border-[#EDE0E6] shadow-none rounded-2xl select-none">
+    <Card className="border border-[#EDE0E6] shadow-none rounded-2xl select-none" data-report-block>
       <CardHeader className="card-responsive-header">
         <div className="flex items-start justify-between">
           <div>
@@ -167,7 +167,7 @@ export const SwingComparisonChart: React.FC<SwingComparisonChartProps> = ({ data
           <div className="flex items-center gap-2">
             <span className="w-6 h-0.5 inline-block" style={{ borderTop: '2px dashed #8B0A3D' }} />
             <span className="swing-avg-label text-[#8B0A3D] font-sans">
-              Avg Portfolio Swing: {metrics.avgAbsDailyROI.toFixed(2)}%
+              Avg Per Day Return (%): {metrics.avgAbsDailyROI.toFixed(2)}%
             </span>
           </div>
           <div className="flex items-center gap-2">

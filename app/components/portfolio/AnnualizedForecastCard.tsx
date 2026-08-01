@@ -23,7 +23,7 @@ export const AnnualizedForecastCard: React.FC<AnnualizedForecastCardProps> = ({ 
   };
 
   return (
-    <Card className="stats-card border border-[#EDE0E6] shadow-none rounded-2xl select-none h-full flex flex-col">
+    <Card className="stats-card border border-[#EDE0E6] shadow-none rounded-2xl select-none h-full flex flex-col" data-report-block>
       <CardContent className="p-4 sm:p-5 pt-4 sm:pt-5 flex flex-col justify-between flex-1 font-sans">
         <div>
           <div className="flex justify-between items-center">
@@ -44,6 +44,9 @@ export const AnnualizedForecastCard: React.FC<AnnualizedForecastCardProps> = ({ 
           </h3>
           <span className="text-[11px] text-[#9B8A92] mt-1.5 block">
             Based on last trading day
+          </span>
+          <span className="text-[11px] text-[#9B8A92] mt-0.5 block">
+            As per working days only
           </span>
         </div>
 

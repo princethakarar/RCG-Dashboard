@@ -13,7 +13,7 @@ export const AvgDaysToNewHighCard: React.FC<AvgDaysToNewHighCardProps> = ({ metr
   const { avgDaysToNewHigh } = metrics;
   
   return (
-    <Card className="stats-card border border-[#EDE0E6] shadow-none rounded-2xl select-none h-full flex flex-col">
+    <Card className="stats-card border border-[#EDE0E6] shadow-none rounded-2xl select-none h-full flex flex-col" data-report-block>
       <CardContent className="p-4 sm:p-5 pt-4 sm:pt-5 flex flex-col justify-between flex-1 font-sans">
         <div>
           <div className="flex justify-between items-center">

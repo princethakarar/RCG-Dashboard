@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { usePortfolio } from '../../hooks/usePortfolioData';
 import { formatDate, formatDateFull } from '../../lib/formatters';
+import { isPageVisibleToUser } from '../../lib/pageAccessConfig';
 import { Badge } from '../ui/badge';
 import { Menu, X, CircleUserRound, LogOut, ChevronDown } from 'lucide-react';
 
@@ -97,8 +98,9 @@ export const TopNav: React.FC = () => {
     { name: 'Backoffice', path: '/backoffice' },
   ];
 
-  const isHiddenIntern3xUser = (userEmail || '').trim().toLowerCase() === 'milanpatelrising1@gmail.com';
-  const navItems = allNavItems.filter(item => !(isHiddenIntern3xUser && item.path === '/intern-portfolio'));
+  // While the session is still loading userEmail is null, so restricted links
+  // stay hidden rather than flashing in and out of the nav.
+  const navItems = allNavItems.filter(item => isPageVisibleToUser(item.path, userEmail));
 
   const checkActive = (path: string) => {
     if (path === '/intern-portfolio') {

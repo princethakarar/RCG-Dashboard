@@ -10,9 +10,47 @@ const COOKIE_NAME = 'auth_token';
 // Redis cache key prefix for per-user credentials
 const CACHE_KEY_USER_PREFIX = 'auth:user:';
 
+// Columns every user lookup selects. Kept in one place so the Redis-cached
+// shape and the direct-by-id shape never drift apart.
+const USER_COLUMNS = 'id, email, username, password_hash, password_version';
+// Pre-username column set. Only used if the schema.sql `users.username`
+// migration hasn't been applied yet, so a deploy that lands ahead of the
+// migration can't lock everyone out of login.
+const LEGACY_USER_COLUMNS = 'id, email, password_hash, password_version';
+// Postgres "undefined column" (reads) / PostgREST "column not in schema cache" (writes)
+const UNDEFINED_COLUMN = '42703';
+const UNKNOWN_COLUMN_CACHED = 'PGRST204';
+
+/**
+ * Selects one user row by an indexed column, tolerating a database that
+ * predates the `username` column.
+ */
+async function selectUser(column: 'id' | 'email', value: string): Promise<UserRecord | null> {
+  const { data, error } = await supabase.from('users').select(USER_COLUMNS).eq(column, value).single();
+
+  if (!error && data) {
+    return data;
+  }
+
+  if (error?.code !== UNDEFINED_COLUMN) {
+    return null;
+  }
+
+  console.warn('[auth] users.username is missing - run the schema.sql migration. Falling back to legacy columns.');
+  const legacy = await supabase.from('users').select(LEGACY_USER_COLUMNS).eq(column, value).single();
+
+  if (legacy.error || !legacy.data) {
+    return null;
+  }
+
+  return { ...legacy.data, username: null };
+}
+
 export interface UserRecord {
   id: string;
   email: string;
+  /** Null for accounts created before the explicit register flow existed. */
+  username: string | null;
   password_hash: string;
   password_version: number;
 }
@@ -32,21 +70,17 @@ export async function getUserByEmail(email: string): Promise<UserRecord | null> 
   const cacheKey = `${CACHE_KEY_USER_PREFIX}${normalizedEmail}`;
 
   const cached = await getCachedData<UserRecord>(cacheKey);
-  if (cached) {
+  // Entries written before `username` existed are treated as stale so the
+  // display name isn't missing for up to a full cache TTL after deploy.
+  if (cached && cached.username !== undefined) {
     return cached;
   }
 
-  const { data, error } = await supabase
-    .from('users')
-    .select('id, email, password_hash, password_version')
-    .eq('email', normalizedEmail)
-    .single();
-
-  if (error || !data) {
+  const user = await selectUser('email', normalizedEmail);
+  if (!user) {
     return null;
   }
 
-  const user: UserRecord = data;
   await setCachedData(cacheKey, user, 600);
   return user;
 }
@@ -55,38 +89,61 @@ export async function getUserByEmail(email: string): Promise<UserRecord | null> 
  * Fetch a user's credentials by id (used when re-checking password version).
  */
 export async function getUserById(userId: string): Promise<UserRecord | null> {
+  return selectUser('id', userId);
+}
+
+/**
+ * Thrown when a registration targets an email that already has an account.
+ */
+export class EmailTakenError extends Error {
+  constructor() {
+    super('An account with this email already exists. Please log in instead.');
+    this.name = 'EmailTakenError';
+  }
+}
+
+/**
+ * Creates a new user account with its own username and password (registration).
+ */
+export async function createUser(email: string, password: string, username: string): Promise<UserRecord> {
+  const normalizedEmail = email.toLowerCase();
+  const hash = bcrypt.hashSync(password, 10);
+
   const { data, error } = await supabase
     .from('users')
-    .select('id, email, password_hash, password_version')
-    .eq('id', userId)
+    .insert({ email: normalizedEmail, username, password_hash: hash, password_version: 1 })
+    .select(USER_COLUMNS)
     .single();
 
   if (error || !data) {
-    return null;
+    // 23505 = unique violation on users.email (two registrations racing, or a
+    // stale read of the existing-account check).
+    if (error?.code === '23505') {
+      throw new EmailTakenError();
+    }
+    console.error('[auth] Failed to create user:', error);
+    if (error?.code === UNDEFINED_COLUMN || error?.code === UNKNOWN_COLUMN_CACHED) {
+      throw new Error('Registration is unavailable: the users.username column is missing. Apply the schema.sql migration.');
+    }
+    throw new Error('Failed to create user account');
   }
 
   return data;
 }
 
 /**
- * Creates a new user account with its own password (first-login signup).
+ * The name to show in the UI for an account. Accounts created under the old
+ * auto-create-on-login flow have no username, so fall back to the email prefix
+ * and finally to a generic label.
  */
-export async function createUser(email: string, password: string): Promise<UserRecord> {
-  const normalizedEmail = email.toLowerCase();
-  const hash = bcrypt.hashSync(password, 10);
-
-  const { data, error } = await supabase
-    .from('users')
-    .insert({ email: normalizedEmail, password_hash: hash, password_version: 1 })
-    .select('id, email, password_hash, password_version')
-    .single();
-
-  if (error || !data) {
-    console.error('[auth] Failed to create user:', error);
-    throw new Error('Failed to create user account');
+export function resolveDisplayName(username: string | null | undefined, email: string | null | undefined): string {
+  const name = (username || '').trim();
+  if (name) {
+    return name;
   }
 
-  return data;
+  const prefix = (email || '').split('@')[0].trim();
+  return prefix || 'User';
 }
 
 /**

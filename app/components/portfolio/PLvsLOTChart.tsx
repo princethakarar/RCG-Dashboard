@@ -68,7 +68,7 @@ export const PLvsLOTChart: React.FC<PLvsLOTChartProps> = ({ data }) => {
   };
 
   return (
-    <Card className="border border-[#EDE0E6] shadow-none rounded-2xl overflow-hidden select-none">
+    <Card className="border border-[#EDE0E6] shadow-none rounded-2xl overflow-hidden select-none" data-report-block>
       <CardHeader className="card-responsive-header pb-2">
         <CardTitle className="text-sm sm:text-[15px] font-semibold text-[#1A0A10] tracking-tight">
           P&amp;L LOT Over Time

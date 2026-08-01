@@ -51,7 +51,21 @@ export const ReportCapture = forwardRef<HTMLDivElement, ReportCaptureProps>(
           className="hidden pdf-branding bg-white p-8 rounded-2xl border-2 border-[#8B0A3D]/15 mb-6 flex-col items-center justify-center text-center"
           data-report-block
         >
-          <Image src="/logo.png" alt="Rising Capital Group" width={160} height={64} className="h-14 w-auto mb-4 mx-auto" />
+          {/* `unoptimized` serves the full 620x504 asset instead of next/image's
+              256px downscale, which left the wordmark technically present but too
+              soft to read at normal PDF zoom. It also keeps the /_next/image
+              endpoint out of the capture path — html2canvas refetches every image
+              once per block, so an export was making ~18 round-trips through the
+              optimizer for this one logo. Intrinsic width/height match the real
+              asset so layout never resolves from a wrong aspect ratio. */}
+          <Image
+            src="/logo.png"
+            alt="Rising Capital Group"
+            width={620}
+            height={504}
+            unoptimized
+            className="h-20 w-auto mb-4 mx-auto"
+          />
           <h2 className="text-2xl font-extrabold text-[#1A0A10] tracking-tight">{title}</h2>
           {subtitle && (
             <p className="text-[#6B4A58] text-sm mt-1 font-medium">{subtitle}</p>

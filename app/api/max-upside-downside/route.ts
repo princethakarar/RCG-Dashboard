@@ -3,6 +3,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { supabase } from '../../lib/supabase';
 import { getCachedData, setCachedData } from '../../lib/redis';
 import { getUserId } from '../../lib/getUser';
+import { getFileName } from '../../lib/fileMeta';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const userId = await getUserId(request);
     const cacheKey = `user:${userId}:dashboard:max_upside_downside`;
+    const fileName = await getFileName(userId, 'max_upside_downside');
 
     // Try per-user Redis cache first
     const cachedData = await getCachedData<unknown[]>(cacheKey);
@@ -19,6 +21,7 @@ export async function GET(request: NextRequest) {
       console.log(`[max-upside-downside] Cache HIT for user ${userId}`);
       return NextResponse.json({
         data: cachedData,
+        fileName,
         _source: 'redis'
       }, {
         headers: noCacheHeaders()
@@ -46,6 +49,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       data: data || [],
+      fileName,
       _source: 'supabase'
     }, {
       headers: noCacheHeaders()

@@ -1,10 +1,31 @@
 import { Redis } from '@upstash/redis';
 
-// Upstash Redis REST client singleton
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+// Treat missing / placeholder config as "caching disabled" so the app runs
+// (and stays fast) without Upstash. Without this, an unreachable placeholder
+// host triggers a slow DNS failure on every request. Add real Upstash creds
+// and caching turns back on automatically.
+export const REDIS_ENABLED =
+  !!REDIS_URL &&
+  !!REDIS_TOKEN &&
+  REDIS_URL.startsWith('https://') &&
+  !REDIS_URL.includes('disabled.upstash.io');
+
+// Silent stand-in used when Redis isn't configured. Mirrors the get/set/del
+// methods this app calls and resolves instantly with no network I/O, so every
+// caller cleanly falls back to Supabase.
+const noopRedis = {
+  get: async () => null,
+  set: async () => null,
+  del: async () => 0,
+} as unknown as Redis;
+
+// Upstash Redis REST client singleton (or the no-op stub when unconfigured)
+const redis: Redis = REDIS_ENABLED
+  ? new Redis({ url: REDIS_URL!, token: REDIS_TOKEN! })
+  : noopRedis;
 
 // Cache keys
 export const CACHE_KEYS = {

@@ -9,10 +9,12 @@ export async function middleware(request: NextRequest) {
   const isProtectedPath =
     pathname.startsWith('/intern-portfolio') ||
     pathname.startsWith('/net-asset') ||
+    pathname.startsWith('/yep-vs-nifty') ||
     pathname.startsWith('/upload') ||
     pathname.startsWith('/admin') ||
     pathname.startsWith('/update-security-config-31f2') ||
     pathname.startsWith('/api/portfolio-data') ||
+    pathname.startsWith('/api/yep-performance') ||
     pathname.startsWith('/api/upload') ||
     pathname.startsWith('/api/max-upside-downside');
 

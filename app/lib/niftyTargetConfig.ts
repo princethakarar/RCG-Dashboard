@@ -16,7 +16,7 @@ export const MONTHLY_TARGET_RETURN = 1.0;
  * `new Date()` — so uploading a file that ends in the past shows that file's
  * own last 2 years.
  */
-export const TARGET_WINDOW_YEARS = 2;
+export const TARGET_WINDOW_YEARS = 6;
 
 /** Decimal places used when rendering each target (0.225% vs 1.00%). */
 export const WEEKLY_TARGET_DECIMALS = 3;

@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import { put } from '@vercel/blob';
 import { invalidateCache } from '../../../lib/redis';
 import { getUserId } from '../../../lib/getUser';
+import { saveFileName } from '../../../lib/fileMeta';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -63,6 +64,9 @@ export async function POST(req: NextRequest) {
       }
       console.log(`[max-upside-downside] Successfully inserted ${rows.length} rows for user ${userId}.`);
     }
+
+    // Remember the uploaded file's name for the dashboard's loaded-files list.
+    if (file) await saveFileName(userId, 'max_upside_downside', file.name);
 
     // Invalidate per-user Redis cache
     await invalidateCache(`user:${userId}:dashboard:max_upside_downside`);

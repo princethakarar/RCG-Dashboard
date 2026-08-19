@@ -5,6 +5,7 @@ import { put } from '@vercel/blob';
 import { supabase } from '../../../lib/supabase';
 import { invalidateCache, CACHE_KEYS } from '../../../lib/redis';
 import { getUserId } from '../../../lib/getUser';
+import { saveFileName } from '../../../lib/fileMeta';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,6 +61,9 @@ export async function POST(req: NextRequest) {
       }
       totalInserted += count ?? batch.length;
     }
+
+    // Remember the uploaded file's name for the dashboard's loaded-files list.
+    await saveFileName(userId, 'position', filename || (file ? file.name : null));
 
     // Clear cache
     await invalidateCache(

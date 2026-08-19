@@ -147,6 +147,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const userId = await getUserId(request);
+    const perfFileName = await fetchPerformanceFileName(userId);
 
     // ──────────────────────────────────────────
     // Step 1: Try per-user Redis cache
@@ -201,7 +202,7 @@ export async function GET(request: NextRequest) {
 
     if (cached3x && cachedNet && cachedTrading && nav3xSeries && navNetSeries && nav3xForecast !== null && navNetForecast !== null) {
       console.log(`[portfolio-data] Cache HIT for user ${userId} — returning cached data`);
-      const fileInfo = buildFileInfo(cached3x);
+      const fileInfo = buildFileInfo(cached3x, perfFileName);
 
       return NextResponse.json(
         {
@@ -272,7 +273,7 @@ export async function GET(request: NextRequest) {
       console.log(`[portfolio-data] Populated ${promises.length} missing cache keys for user ${userId}`);
     }
 
-    const fileInfo = buildFileInfo(data3x);
+    const fileInfo = buildFileInfo(data3x, perfFileName);
 
     return NextResponse.json(
       {
@@ -299,17 +300,29 @@ export async function GET(request: NextRequest) {
 
 // ─── Helpers ──────────────────────────────────────────
 
-function buildFileInfo(data: PortfolioRow[]) {
+function buildFileInfo(data: PortfolioRow[], fileName?: string | null) {
   if (!data || data.length === 0) return [];
 
   const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date));
   return [{
-    name: 'DLL11706_PERFORMANCE_P_L.xlsx',
+    name: fileName || 'Performance_P_L.xlsx',
     url: '',
     startDate: sorted[0].date,
     endDate: sorted[sorted.length - 1].date,
     rowCount: sorted.length,
   }];
+}
+
+/** The name of the Performance P&L file this user last uploaded, if any. */
+async function fetchPerformanceFileName(userId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('user_file_meta')
+    .select('file_name')
+    .eq('user_id', userId)
+    .eq('file_key', 'performance')
+    .maybeSingle();
+  if (error) return null;
+  return (data as { file_name?: string } | null)?.file_name ?? null;
 }
 
 function noCacheHeaders(): Record<string, string> {

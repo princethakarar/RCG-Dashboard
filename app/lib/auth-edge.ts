@@ -40,7 +40,16 @@ export async function getUserPasswordVersion(userId: string, email: string): Pro
   const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
   const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-  if (redisUrl && redisToken) {
+  // Skip Redis entirely when it isn't really configured (missing or a disabled
+  // placeholder). Avoids a slow DNS failure on every protected request; the
+  // Supabase REST fallback below handles it. Real creds re-enable this path.
+  const redisEnabled =
+    !!redisUrl &&
+    !!redisToken &&
+    redisUrl.startsWith('https://') &&
+    !redisUrl.includes('disabled.upstash.io');
+
+  if (redisEnabled) {
     try {
       const cacheKey = `auth:user:${email.toLowerCase()}`;
       const res = await fetch(`${redisUrl}/get/${encodeURIComponent(cacheKey)}`, {

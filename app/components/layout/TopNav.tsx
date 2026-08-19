@@ -92,6 +92,7 @@ export const TopNav: React.FC = () => {
   const allNavItems = [
     { name: 'Rising Alpha Creator Portfolio 3x', path: '/intern-portfolio' },
     { name: 'Rising Alpha Creator Portfolio Net Asset', path: '/net-asset' },
+    { name: 'Rising YEP vs Nifty', path: '/yep-vs-nifty' },
     { name: 'Strategies', path: '/strategies' },
     { name: 'Statistics', path: '/admin/statistics' },
     { name: 'Upload Data', path: '/upload' },

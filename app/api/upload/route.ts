@@ -87,6 +87,20 @@ export async function POST(req: NextRequest) {
       console.log(`[upload] Sheet 3 (portfolio_net_asset): ${results.sheet3} rows upserted for user ${userId}`);
     }
 
+    // Remember the uploaded file's name so the dashboard shows it (instead of
+    // a hardcoded label). Non-critical — never fail the upload over this.
+    try {
+      const perfName: string | null = filename || (file ? file.name : null);
+      if (perfName) {
+        await supabase.from('user_file_meta').upsert(
+          { user_id: userId, file_key: 'performance', file_name: perfName, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id,file_key' }
+        );
+      }
+    } catch (metaErr) {
+      console.error('[upload] filename meta save failed (non-critical):', metaErr);
+    }
+
     // ──────────────────────────────────────────
     // Invalidate per-user Redis cache
     // ──────────────────────────────────────────

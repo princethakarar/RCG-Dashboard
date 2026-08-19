@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '../../lib/supabase';
 import { getUserId } from '../../lib/getUser';
+import { getFileName } from '../../lib/fileMeta';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +20,9 @@ export async function GET(req: NextRequest) {
       throw new Error(`Database fetch error: ${error.message}`);
     }
 
-    return NextResponse.json({ success: true, data: data || [] });
+    const fileName = await getFileName(userId, 'position');
+
+    return NextResponse.json({ success: true, data: data || [], fileName });
   } catch (error: unknown) {
     console.error('Error in GET /api/position-data:', error);
     return NextResponse.json({ error: (error as Error).message || 'Failed to fetch data' }, { status: 500 });

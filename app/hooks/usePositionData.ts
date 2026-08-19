@@ -10,6 +10,7 @@ export interface PositionDataRow {
 
 export function usePositionData() {
   const [data, setData] = useState<PositionDataRow[]>([]);
+  const [fileName, setFileName] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,6 +27,7 @@ export function usePositionData() {
       }
 
       setData(json.data || []);
+      setFileName(json.fileName ?? null);
     } catch (err: unknown) {
       console.error('Error fetching Position data:', err);
       setError(err instanceof Error ? err.message : String(err));
@@ -38,5 +40,5 @@ export function usePositionData() {
     fetchData();
   }, [fetchData]);
 
-  return { data, loading, error, refetch: fetchData };
+  return { data, fileName, loading, error, refetch: fetchData };
 }

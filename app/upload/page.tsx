@@ -11,6 +11,7 @@ import { HybridStrategyUploadZone } from '../components/upload/HybridStrategyUpl
 import { MaxUpsideDownsideUploadZone } from '../components/upload/MaxUpsideDownsideUploadZone';
 import { PositionUploadZone } from '../components/upload/PositionUploadZone';
 import { NiftyOhlcUploadZone } from '../components/upload/NiftyOhlcUploadZone';
+import { YepUploadZone } from '../components/upload/YepUploadZone';
 import { useStrategyData } from '../hooks/useStrategyData';
 import { useMaxUpsideDownside } from '../hooks/useMaxUpsideDownside';
 import { usePositionData } from '../hooks/usePositionData';
@@ -69,6 +70,48 @@ function HybridUploadCard({ userEmail, onGlobalUploadSuccess }: { userEmail: str
   );
 }
 
+function YepUploadCard() {
+  const [files, setFiles] = React.useState<{ name: string; startDate?: string; endDate?: string; rowCount?: number }[]>([]);
+
+  const refetch = React.useCallback(async () => {
+    try {
+      const res = await fetch(`/api/yep-performance?t=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json.summary && json.series?.length) {
+        setFiles([{
+          name: 'Rising_YEP_vs_Nifty_Cumulative_Performance.xlsx',
+          startDate: json.summary.start,
+          endDate: json.summary.end,
+          rowCount: json.series.length,
+        }]);
+      } else {
+        setFiles([]);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  React.useEffect(() => { refetch(); }, [refetch]);
+
+  return (
+    <Card className="border border-[#EDE0E6] shadow-none rounded-2xl bg-white">
+      <CardHeader className="p-5 pb-2">
+        <CardTitle className="text-sm font-bold text-[#1A0A10] uppercase tracking-wide">
+          Rising YEP vs Nifty
+        </CardTitle>
+        <CardDescription className="text-xs text-[#9B8A92] font-semibold leading-relaxed">
+          Ingest the Rising YEP vs Nifty cumulative-performance export (Daily Data sheet). Drives the Rising YEP vs Nifty dashboard.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-5 pt-0">
+        <YepUploadZone files={files} onUploadSuccess={refetch} />
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function UploadPage() {
   const userEmail = useCurrentUserEmail();
   const redCandleDisplayName = getStrategyDisplayName('3 Red Candle', userEmail);
@@ -76,8 +119,8 @@ export default function UploadPage() {
   const { files, navSeries, refetch } = usePortfolio();
   const { dailyData: strategyData, refetch: refetchStrategy } = useStrategyData('3 Red Candle');
   const { dailyData: soldierData, refetch: refetchSoldier } = useStrategyData('Soldier Pattern');
-  const { data: maxUpsideDownsideData, refetch: refetchMaxUpsideDownside } = useMaxUpsideDownside();
-  const { data: positionData, refetch: refetchPosition } = usePositionData();
+  const { data: maxUpsideDownsideData, fileName: maxUpsideDownsideName, refetch: refetchMaxUpsideDownside } = useMaxUpsideDownside();
+  const { data: positionData, fileName: positionName, refetch: refetchPosition } = usePositionData();
   const { data: niftyOhlc, refetch: refetchNiftyOhlc } = useNiftyOhlc();
 
   const handleUploadSuccess = () => {
@@ -136,23 +179,23 @@ export default function UploadPage() {
     if (!maxUpsideDownsideData || maxUpsideDownsideData.length === 0) return [];
     const sorted = [...maxUpsideDownsideData].sort((a, b) => a.date.localeCompare(b.date));
     return [{
-      name: 'MAX_Upside___Downside.xlsx',
+      name: maxUpsideDownsideName || 'MAX_Upside___Downside.xlsx',
       startDate: sorted[0].date,
       endDate: sorted[sorted.length - 1].date,
       rowCount: sorted.length,
     }];
-  }, [maxUpsideDownsideData]);
+  }, [maxUpsideDownsideData, maxUpsideDownsideName]);
 
   const positionFiles = React.useMemo(() => {
     if (!positionData || positionData.length === 0) return [];
     const sorted = [...positionData].sort((a, b) => a.date.localeCompare(b.date));
     return [{
-      name: 'Position_File_Summery.xlsx',
+      name: positionName || 'Position_File_Summery.xlsx',
       startDate: sorted[0].date,
       endDate: sorted[sorted.length - 1].date,
       rowCount: sorted.length,
     }];
-  }, [positionData]);
+  }, [positionData, positionName]);
 
   const niftyOhlcFiles = React.useMemo(() => {
     if (!niftyOhlc || niftyOhlc.rowCount === 0) return [];
@@ -186,11 +229,11 @@ export default function UploadPage() {
         {/* Two Upload Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           
-          {/* Card A: DLL11706 PERFORMANCE P&L */}
+          {/* Card A: PERFORMANCE P&L */}
           <Card className="border border-[#EDE0E6] shadow-none rounded-2xl bg-white">
             <CardHeader className="p-5 pb-2">
               <CardTitle className="text-sm font-bold text-[#1A0A10] uppercase tracking-wide">
-                DLL11706 Performance P&amp;L
+                Performance P&amp;L
               </CardTitle>
               <CardDescription className="text-xs text-[#9B8A92] font-semibold leading-relaxed">
                 Ingest daily P&amp;L returns, benchmark comparisons, and desk margin data.
@@ -307,7 +350,7 @@ export default function UploadPage() {
           </Card>
         </div>
 
-        {/* Nifty OHLC Section — drives the Weekly / Monthly Target charts */}
+        {/* Nifty OHLC + Rising YEP vs Nifty — side by side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mt-6">
           <Card className="border border-[#EDE0E6] shadow-none rounded-2xl bg-white">
             <CardHeader className="p-5 pb-2">
@@ -325,6 +368,9 @@ export default function UploadPage() {
               />
             </CardContent>
           </Card>
+
+          {/* Rising YEP vs Nifty — drives the Rising YEP vs Nifty dashboard */}
+          <YepUploadCard />
         </div>
 
       </main>

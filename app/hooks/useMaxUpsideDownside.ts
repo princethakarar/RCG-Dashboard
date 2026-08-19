@@ -12,6 +12,7 @@ export interface MaxUpsideDownsideRow {
 
 export function useMaxUpsideDownside() {
   const [data, setData] = useState<MaxUpsideDownsideRow[]>([]);
+  const [fileName, setFileName] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +29,7 @@ export function useMaxUpsideDownside() {
       }
 
       setData(json.data || []);
+      setFileName(json.fileName ?? null);
     } catch (err: unknown) {
       console.error('Error fetching Max Upside/Downside data:', err);
       setError(err instanceof Error ? err.message : String(err));
@@ -40,5 +42,5 @@ export function useMaxUpsideDownside() {
     fetchData();
   }, [fetchData]);
 
-  return { data, loading, error, refetch: fetchData };
+  return { data, fileName, loading, error, refetch: fetchData };
 }

@@ -12,6 +12,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const fillDemoCredentials = () => {
+    setEmail('sample@gmail.com');
+    setPassword('Sample@1234');
+    setError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -69,6 +75,7 @@ export default function LoginPage() {
             </p>
 
           </div>
+
 
           {/* Inline Error Message (Badge/Pill style) */}
           {error && (
@@ -167,6 +174,23 @@ export default function LoginPage() {
               Register
             </Link>
           </p>
+
+          {/* Demo credentials */}
+          <div className="mt-4 w-full border-t border-[#EDE0E6] pt-4">
+            <p className="text-[10px] font-bold text-[#9B8A92] uppercase tracking-[0.08em] text-center mb-2.5">
+              Demo Account
+            </p>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-[#9B8A92]">Email</span>
+                <span className="text-[11px] font-mono font-medium text-[#6B4A58]">sample@gmail.com</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-[#9B8A92]">Password</span>
+                <span className="text-[11px] font-mono font-medium text-[#6B4A58]">Sample@1234</span>
+              </div>
+            </div>
+          </div>
 
         </div>
       </div>

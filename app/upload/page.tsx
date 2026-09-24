@@ -70,6 +70,7 @@ function HybridUploadCard({ userEmail, onGlobalUploadSuccess }: { userEmail: str
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function YepUploadCard() {
   const [files, setFiles] = React.useState<{ name: string; startDate?: string; endDate?: string; rowCount?: number }[]>([]);
 

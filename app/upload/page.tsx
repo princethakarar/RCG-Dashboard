@@ -370,7 +370,7 @@ export default function UploadPage() {
           </Card>
 
           {/* Rising YEP vs Nifty — drives the Rising YEP vs Nifty dashboard */}
-          <YepUploadCard />
+          {/* <YepUploadCard /> */}
         </div>
 
       </main>
